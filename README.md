@@ -1,5 +1,4 @@
 # 🚧 App Under Construction — Coming Soon
-## 🚧 App Under Construction
 
 The interactive dashboard (Streamlit App) is currently under development.
 

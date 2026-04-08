@@ -1,2 +1,18 @@
-# Multi-Asset-Price-Prediction-System-using-Machine-Learning
-A scalable machine learning pipeline for predicting prices of metals, currencies, and commodities.  Includes data ingestion, preprocessing, feature engineering, model training, and visualization via Streamlit dashboard.
+# 🚧 App Under Construction — Coming Soon
+## 🚧 App Under Construction
+
+The interactive dashboard (Streamlit App) is currently under development.
+
+Core machine learning pipeline is fully functional, including:
+- Data collection
+- Preprocessing
+- Feature engineering
+- Model training
+- Multi-asset prediction
+
+The user interface is being improved and will be available soon with:
+- Interactive charts
+- Real-time predictions
+- Multi-tab dashboard experience
+
+Stay tuned for updates! 🚀

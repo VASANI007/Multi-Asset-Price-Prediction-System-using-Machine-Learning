@@ -360,24 +360,17 @@ def create_silver_input(df):
     ma3 = df['Silver_1g'].tail(3).mean()
     ma7 = df['Silver_1g'].tail(7).mean()
 
-    gold = df['Gold_24K_1g'].iloc[-1]
-    gold_change = df['Gold_24K_1g'].pct_change().iloc[-1]
-
     usd = df['USD_INR'].iloc[-1]
     usd_change = df['USD_INR'].pct_change().iloc[-1] if len(df) > 1 else 0
 
     return pd.DataFrame([[ 
         lag1, lag2, lag3,
         ma3, ma7,
-        gold,
-        gold_change,
         usd,
         usd_change
     ]], columns=[
         'Lag_1','Lag_2','Lag_3',
         'MA_3','MA_7',
-        'Gold_24K_1g',
-        'Gold_Change',
         'USD_INR',
         'USD_Change'
     ])
@@ -498,13 +491,15 @@ def get_prediction(df, metal):
     else:
         return None
 #  COMMON UI
-def show_section(metal, column_name):
+def show_section(asset):
 
-    styled_subheader(f"{metal} Overview")
+    styled_subheader(f"{asset} Overview")
 
     colA, colB = st.columns(2)
+
     max_date = df['Date'].max().date()
 
+    # ---------------- DATE ----------------
     with colA:
         min_date = df['Date'].min().date()
         today = datetime.now().date()
@@ -512,182 +507,178 @@ def show_section(metal, column_name):
 
         selected_date = st.date_input(
             "Choose Date",
-            value=df['Date'].max().date(),
+            value=max_date,
             min_value=min_date,
             max_value=max_future_date,
-            key=f"{metal}_date"
+            key=f"{asset}_date"
         )
 
-        if selected_date > max_future_date:
-            st.error("Only next 7 days allowed for prediction")
-            return
+    # ---------------- TYPE ----------------
+    if asset in ["Gold_24K", "Gold_22K", "Gold_18K", "Silver", "Platinum", "Palladium", "Copper"]:
+        asset_type = "metal"
+    elif asset in ["USD", "EUR", "GBP"]:
+        asset_type = "currency"
+    else:
+        asset_type = "energy"
 
-    with colB:
-        weight_options = ["1g", "10g", "100g", "1kg"]
-        selected_weight = st.selectbox(
-            "Select Weight",
-            weight_options,
-            index=0,
-            key=f"{metal}_weight"
-        )
+    # ---------------- WEIGHT / UNIT ----------------
+    if asset_type == "metal":
+        with colB:
+            selected_weight = st.selectbox(
+                "Select Weight",
+                ["1g", "10g", "100g", "1kg"],
+                index=0,
+                key=f"{asset}_weight"
+            )
 
-    column_name = f"{metal}_{selected_weight}"
+        weight_map = {"1g":1, "10g":10, "100g":100, "1kg":1000}
+        multiplier = weight_map[selected_weight]
+        base_col = f"{asset}_1g"
+
+    elif asset_type == "currency":
+        selected_weight = "unit"
+        multiplier = 1
+        base_col = f"{asset}_INR"
+
+    else:
+        with colB:
+            st.write("Unit: Barrel")
+
+        selected_weight = "barrel"
+        multiplier = 1
+        base_col = f"{asset}_INR_per_barrel"
+
+    # ---------------- VALIDATION ----------------
+    if base_col not in df.columns:
+        st.error(f"{asset} data not available")
+        return
+
     filtered_df = df[df['Date'].dt.date == selected_date]
-    max_date = df['Date'].max().date()
 
-    # ---------------- FUTURE CASE ----------------
-    if filtered_df.empty and selected_date > max_date:
+    # ---------------- NORMAL ----------------
+    if not filtered_df.empty:
+        selected_row = filtered_df.iloc[0]
 
+        base_today = float(selected_row[base_col])
+        today_price = base_today * multiplier
+
+        prev_df = df[df['Date'] < pd.to_datetime(selected_date)]
+        base_yesterday = float(prev_df.iloc[-1][base_col]) if not prev_df.empty else base_today
+        yesterday_price = base_yesterday * multiplier
+
+    # ---------------- FUTURE ----------------
+    else:
         st.warning("Future date selected — showing prediction")
 
         temp_df = df.copy()
         days_ahead = (selected_date - max_date).days
 
         for _ in range(days_ahead):
-            next_pred = get_prediction(temp_df, metal)
+            next_pred = get_prediction(temp_df, asset)
 
             new_row = temp_df.iloc[-1].copy()
-            new_row['Date'] = new_row['Date'] + timedelta(days=1)
-
-            if metal == "Gold_22K":
-                new_row['Gold_24K_1g'] = next_pred / (22/24)
-            elif metal == "Gold_18K":
-                new_row['Gold_24K_1g'] = next_pred / (18/24)
-            else:
-                new_row[column_name] = next_pred
+            new_row['Date'] += timedelta(days=1)
+            new_row[base_col] = next_pred  # always 1g
 
             temp_df = pd.concat([temp_df, pd.DataFrame([new_row])], ignore_index=True)
 
         selected_row = temp_df.iloc[-1]
-        today = float(selected_row[column_name])
-        yesterday = float(temp_df.iloc[-2][column_name])
 
-        selected_datetime = pd.to_datetime(selected_date)
+        today_price = float(selected_row[base_col]) * multiplier
+        yesterday_price = float(temp_df.iloc[-2][base_col]) * multiplier
 
-    # ---------------- NORMAL CASE ----------------
-    elif not filtered_df.empty:
-
-        selected_row = filtered_df.iloc[0]
-
-        today = float(selected_row[column_name])
-
-        prev_df = df[df['Date'] < pd.to_datetime(selected_date)]
-
-        if not prev_df.empty:
-            yesterday = float(prev_df.iloc[-1][column_name])
-        else:
-            yesterday = today
-
-        selected_datetime = pd.to_datetime(selected_date)
-
-    else:
-        st.error("Data Not Found for selected date")
-        return
-
-    change = today - yesterday
-
-    if change > 0:
-        arrow = "▲"
-        delta_color = "normal"
-    else:
-        arrow = "▼"
-        delta_color = "inverse"
+    change = today_price - yesterday_price
+    arrow = "▲" if change > 0 else "▼"
 
     # ---------------- METRICS ----------------
     col1, col2, col3, col4 = st.columns(4)
 
-    # NEXT DAY PREDICTION
     try:
-        prediction = get_prediction(df, metal)
+        prediction_base = get_prediction(df, asset)
+        prediction = prediction_base * multiplier
 
-        pred_change = prediction - today
+        pred_change = prediction - today_price
 
-        arrow_pred = "▲" if pred_change > 0 else "▼"
-        color_pred = "normal" if pred_change > 0 else "inverse"
-
-        st.metric(
+        col1.metric(
             "🎯 Predicted Next Day",
             f"₹ {prediction:.2f}",
-            f"{arrow_pred} {abs(pred_change):.2f}",
-            delta_color=color_pred
+            f"{'▲' if pred_change > 0 else '▼'} {abs(pred_change):.2f}"
         )
+    except:
+        col1.metric("🎯 Predicted Next Day", "N/A")
 
-    except Exception as e:
-        st.error(f"Prediction error: {e}")
+    col2.metric("📅 Selected Day", f"₹ {today_price:.2f}", f"{arrow} {abs(change):.2f}")
+    col3.metric("📈 Highest", f"₹ {(df[base_col].max() * multiplier):.2f}")
+    col4.metric("📉 Lowest", f"₹ {(df[base_col].min() * multiplier):.2f}")
+
+    st.caption(f"Selected Date: {selected_date} | Weight: {selected_weight}")
+
+    # ---------------- PRICE TABLE ----------------
+    styled_subheader("Price Table")
+
+    if asset_type == "metal":
+        weights = ["1g", "10g", "100g", "1kg"]
+        rows = []
+
+        for w in weights:
+            mul = {"1g":1, "10g":10, "100g":100, "1kg":1000}[w]
+
+            t = float(selected_row[base_col]) * mul
+
+            prev_df = df[df['Date'] < pd.to_datetime(selected_date)]
+            base_prev = float(prev_df.iloc[-1][base_col]) if not prev_df.empty else float(selected_row[base_col])
+            y = base_prev * mul
+
+            c = t - y
+
+            change_html = (
+                f"<span style='color:#02ff99'>▲ ₹{abs(c):,.2f}</span>"
+                if c > 0 else
+                f"<span style='color:#ff4d4d'>▼ ₹{abs(c):,.2f}</span>"
+            )
+
+            rows.append({
+                "Gram": w,
+                "Today": f"₹{t:,.2f}",
+                "Yesterday": f"₹{y:,.2f}",
+                "Change": change_html
+            })
+
+        st.markdown(pd.DataFrame(rows).to_html(escape=False, index=False), unsafe_allow_html=True)
 
     # ---------------- FUTURE 7 DAYS ----------------
+    styled_subheader("7 Day Prediction")
+
     future_preds = []
     future_dates = []
 
     temp_df = df.copy()
 
     for i in range(7):
-        next_pred = get_prediction(temp_df, metal)
+        next_pred = get_prediction(temp_df, asset)
 
-        future_preds.append(next_pred)
-        future_dates.append(selected_datetime + timedelta(days=i+1))
+        future_preds.append(next_pred * multiplier)
+        future_dates.append(df['Date'].max() + timedelta(days=i+1))
 
         new_row = temp_df.iloc[-1].copy()
-        new_row['Date'] = new_row['Date'] + timedelta(days=1)
-
-        if metal == "Gold_22K":
-            new_row['Gold_24K_1g'] = next_pred / (22/24)
-        elif metal == "Gold_18K":
-            new_row['Gold_24K_1g'] = next_pred / (18/24)
-        else:
-            new_row[column_name] = next_pred
+        new_row['Date'] += timedelta(days=1)
+        new_row[base_col] = next_pred
 
         temp_df = pd.concat([temp_df, pd.DataFrame([new_row])], ignore_index=True)
 
-    col1.metric("📅 Selected Day", f"₹ {today:.2f}", f"{arrow} {change:.2f}", delta_color=delta_color)
-    col2.metric("🗓️ Previous Day", f"₹ {yesterday:.2f}")
-    col3.metric("📈 Highest", f"₹ {df[column_name].max():.2f}")
-    col4.metric("📉 Lowest", f"₹ {df[column_name].min():.2f}")
-
-    st.caption(f"Selected Date: {selected_date} | Weight: {selected_weight}")
-
-    # ---------------- TABLE ----------------
-    styled_subheader("Price Table")
-
-    weights = ["1g", "10g", "100g", "1kg"]
-    rows = []
-
-    for w in weights:
-        col = f"{metal}_{w}"
-        t = float(selected_row[col])
-
-        prev_df = df[df['Date'] < pd.to_datetime(selected_date)]
-
-        if not prev_df.empty:
-            y = float(prev_df.iloc[-1][col])
-        else:
-            y = t
-
-        c = t - y
-
-        change_html = f"<span style='color:#02ff99'>▲ ₹{abs(c):,.2f}</span>" if c > 0 else f"<span style='color:#ff4d4d'>▼ ₹{abs(c):,.2f}</span>"
-
-        rows.append({
-            "Gram": w,
-            "Today": f"₹{t:,.2f}",
-            "Yesterday": f"₹{y:,.2f}",
-            "Change": change_html
-        })
-
-    st.markdown(pd.DataFrame(rows).to_html(escape=False, index=False), unsafe_allow_html=True)
-
-    # ---------------- FUTURE TABLE ----------------
-    styled_subheader(" 7 Day Prediction")
-
     pred_rows = []
 
-    for i in range(len(future_preds)):
-        prev_val = today if i == 0 else future_preds[i-1]
+    for i in range(7):
+        prev_val = today_price if i == 0 else future_preds[i-1]
         curr = future_preds[i]
 
         diff = curr - prev_val
 
-        change_html = f"<span style='color:#02ff99'>▲ ₹{abs(diff):,.2f}</span>" if diff > 0 else f"<span style='color:#ff4d4d'>▼ ₹{abs(diff):,.2f}</span>"
+        change_html = (
+            f"<span style='color:#02ff99'>▲ ₹{abs(diff):,.2f}</span>"
+            if diff > 0 else
+            f"<span style='color:#ff4d4d'>▼ ₹{abs(diff):,.2f}</span>"
+        )
 
         pred_rows.append({
             "Date": future_dates[i].date(),
@@ -700,72 +691,52 @@ def show_section(metal, column_name):
     # ---------------- GRAPH ----------------
     styled_subheader("Price Trend")
 
-    options = ["1W", "1M", "3M", "6M", "1Y", "ALL"]
+    range_option = st.radio(
+        "Select Range",
+        ["1W", "1M", "3M", "6M", "1Y", "ALL"],
+        horizontal=True,
+        index=5,
+        key=f"{asset}_range"
+    )
 
-    key_name = f"{metal}_range"
+    dff = df.copy()
 
-    if key_name not in st.session_state:
-        st.session_state[key_name] = "3M"
-
-    left, c1, c2, c3, c4, c5, c6, right = st.columns([2,1,1,1,1,1,1,2])
-    cols = [c1, c2, c3, c4, c5, c6]
-
-    for i, opt in enumerate(options):
-        if cols[i].button(opt, key=f"{opt}_{metal}"):
-            st.session_state[key_name] = opt
-
-    selected = st.session_state[key_name]
-    selected_datetime = pd.to_datetime(selected_date)
-
-    if selected == "1W":
-        dff = df[df['Date'] <= selected_datetime].tail(7)
-    elif selected == "1M":
-        dff = df[df['Date'] <= selected_datetime].tail(30)
-    elif selected == "3M":
-        dff = df[df['Date'] <= selected_datetime].tail(90)
-    elif selected == "6M":
-        dff = df[df['Date'] <= selected_datetime].tail(180)
-    elif selected == "1Y":
-        dff = df[df['Date'] <= selected_datetime].tail(365)
-    else:
-        dff = df[df['Date'] <= selected_datetime]
+    if range_option == "1W":
+        dff = df.tail(7)
+    elif range_option == "1M":
+        dff = df.tail(30)
+    elif range_option == "3M":
+        dff = df.tail(90)
+    elif range_option == "6M":
+        dff = df.tail(180)
+    elif range_option == "1Y":
+        dff = df.tail(365)
 
     fig = go.Figure()
 
     fig.add_trace(go.Scatter(
         x=dff['Date'],
-        y=dff[column_name],
+        y=dff[base_col] * multiplier,
         mode='lines',
-        line=dict(color='#2ecc71', width=3),
-        name=f"{selected_weight} Price"
-    ))
-
-    fig.add_trace(go.Scatter(
-        x=dff['Date'],
-        y=dff[column_name],
-        fill='tozeroy',
-        mode='none',
-        fillcolor='rgba(46,204,113,0.1)'
+        line=dict(color='#00ff99', width=3),
+        name='Actual'
     ))
 
     fig.add_trace(go.Scatter(
         x=future_dates,
         y=future_preds,
         mode='lines+markers',
-        line=dict(color='#f39c12', width=3, dash='dash'),
-        name="Prediction"
+        line=dict(color='#ffaa00', width=3, dash='dot'),
+        name='Prediction'
     ))
 
     fig.update_layout(
         template="plotly_dark",
         hovermode="x unified",
-        margin=dict(l=20, r=20, t=30, b=20),
         yaxis_title=f"Price ({selected_weight})"
     )
 
-    st.plotly_chart(fig, width='stretch')
-
-
+    st.plotly_chart(fig, use_container_width=True)
 # ---------------- TABS ----------------
 
 tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13, tab14 = st.tabs([
@@ -788,67 +759,67 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13
 
 # ---------------- TAB 1 ----------------
 with tab1:
-    show_section("Gold_24K", "Gold_24K_1g")
+    show_section("Gold_24K")
 
 
 # ---------------- TAB 2 ----------------
 with tab2:
-    show_section("Gold_22K", "Gold_22K_1g")
+    show_section("Gold_22K")
 
 
 # ---------------- TAB 3 ----------------
 with tab3:
-    show_section("Gold_18K", "Gold_18K_1g")
+    show_section("Gold_18K")
 
 
 # ---------------- TAB 4 ----------------
 with tab4:
-    show_section("Silver", "Silver_1g")
+    show_section("Silver")
 
 
 # ---------------- TAB 5 ----------------
 with tab5:
-    show_section("USD", "USD_INR")
+    show_section("USD")
 
 
 # ---------------- TAB 6 ----------------
 with tab6:
-    show_section("EUR", "EUR_INR")
+    show_section("EUR")
 
 
 # ---------------- TAB 7 ----------------
 with tab7:
-    show_section("GBP", "GBP_INR")
+    show_section("GBP")
 
 
 # ---------------- TAB 8 ----------------
 with tab8:
-    show_section("Platinum", "Platinum_1g")
+    show_section("Platinum")
 
 
 # ---------------- TAB 9 ----------------
 with tab9:
-    show_section("Palladium", "Palladium_1g")
+    show_section("Palladium")
 
 
 # ---------------- TAB 10 ----------------
 with tab10:
-    show_section("Copper", "Copper_1g")
+    show_section("Copper")
 
 
 # ---------------- TAB 11 ----------------
 with tab11:
-    show_section("Crude_Oil", "Crude_Oil_INR_per_barrel")
+    show_section("Crude_Oil")
 
 
 # ---------------- TAB 12 ----------------
 with tab12:
-    show_section("Brent_Oil", "Brent_Oil_INR_per_barrel")
+    show_section("Brent_Oil")
 
 
 # ---------------- TAB 13 ----------------
 with tab13:
-    show_section("Natural_Gas", "Natural_Gas_INR")
+    show_section("Natural_Gas")
 
 
 # ---------------- TAB 14 (FINAL) ----------------

@@ -10,13 +10,14 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 import yfinance as yf
+
 from src.data.fetch_data import fetch_all
 from src.processing.preprocess import preprocess
 
 #  PATH FIX
 
 #  CONFIG
-st.set_page_config(page_title="Gold & Silver Market Insights", page_icon="🪙", layout="wide")
+st.set_page_config(page_title="Financial Market Intelligence", page_icon="💰", layout="wide")
 #  STYLES Title
 st.markdown("""
 <h1 style='
@@ -25,10 +26,10 @@ st.markdown("""
     padding-left:12px;
     font-weight:bold;
 '>
-Gold & Silver Market Insights
+Financial Market Intelligence
 </h1>
 <p style='color:#aaa; margin-left:12px;'>
-Advanced Analytics for Gold, Silver & Currency
+Advanced Analytics for Precious Metals, Energy & Currency Markets
 </p>
 """, unsafe_allow_html=True)
 
@@ -216,6 +217,15 @@ usd = load_usd_full()
 g24_change = latest['Gold_24K_1g'] - previous['Gold_24K_1g']
 g22_change = latest['Gold_22K_1g'] - previous['Gold_22K_1g']
 silver_change = latest['Silver_1g'] - previous['Silver_1g']
+g18_change = latest['Gold_18K_1g'] - previous['Gold_18K_1g']
+eur_change = latest['EUR_INR'] - previous['EUR_INR']
+gbp_change = latest['GBP_INR'] - previous['GBP_INR']
+platinum_change = latest['Platinum_1g'] - previous['Platinum_1g']
+palladium_change = latest['Palladium_1g'] - previous['Palladium_1g']
+copper_change = latest['Copper_1g'] - previous['Copper_1g']
+crude_change = latest['Crude_Oil_INR_per_barrel'] - previous['Crude_Oil_INR_per_barrel']
+brent_change = latest['Brent_Oil_INR_per_barrel'] - previous['Brent_Oil_INR_per_barrel']
+gas_change = latest['Natural_Gas_INR'] - previous['Natural_Gas_INR']
 
 
 # ---------------- USD LIVE ----------------
@@ -266,23 +276,44 @@ g24_html = format_change(g24_change)
 g22_html = format_change(g22_change)
 silver_html = format_change(silver_change)
 usd_html = format_change(usd_change)
-
+g18_html = format_change(g18_change)
+eur_html = format_change(eur_change)
+gbp_html = format_change(gbp_change)
+platinum_html = format_change(platinum_change)
+palladium_html = format_change(palladium_change)
+copper_html = format_change(copper_change)
+crude_html = format_change(crude_change)
+brent_html = format_change(brent_change)
+gas_html = format_change(gas_change)
 
 # ---------------- SCROLLING TICKER ----------------
 ticker_text = f"""
-Gold 24K: ₹ {latest['Gold_24K_1g']:.2f} ({g24_html}) |
-Gold 22K: ₹ {latest['Gold_22K_1g']:.2f} ({g22_html}) |
-Gold 18K: ₹ {latest['Gold_18K_1g']:.2f} |
-Silver: ₹ {latest['Silver_1g']:.2f} ({silver_html}) |
-USD: ₹ {usd_price:.2f} ({usd_html}) |
-EUR: ₹ {latest['EUR_INR']:.2f} |
-GBP: ₹ {latest['GBP_INR']:.2f} |
-Platinum: ₹ {latest['Platinum_1g']:.2f} |
-Palladium: ₹ {latest['Palladium_1g']:.2f} |
-Copper: ₹ {latest['Copper_1g']:.2f} |
-Crude Oil: ₹ {latest['Crude_Oil_INR_per_barrel']:.2f} |
-Brent Oil: ₹ {latest['Brent_Oil_INR_per_barrel']:.2f} |
-Natural Gas: ₹ {latest['Natural_Gas_INR']:.2f}
+Gold 24K: ₹ {latest['Gold_24K_1g']:.2f} &nbsp;&nbsp;&nbsp;&nbsp;({g24_html})
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+Gold 22K: ₹ {latest['Gold_22K_1g']:.2f} &nbsp;&nbsp;&nbsp;&nbsp;({g22_html})
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+Gold 18K: ₹ {latest['Gold_18K_1g']:.2f} &nbsp;&nbsp;&nbsp;&nbsp;({g18_html})
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+Silver: ₹ {latest['Silver_1g']:.2f} &nbsp;&nbsp;&nbsp;&nbsp;({silver_html})
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+Platinum: ₹ {latest['Platinum_1g']:.2f} &nbsp;&nbsp;&nbsp;&nbsp;({platinum_html})
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+Palladium: ₹ {latest['Palladium_1g']:.2f} &nbsp;&nbsp;&nbsp;&nbsp;({palladium_html})
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+Copper: ₹ {latest['Copper_1g']:.2f} &nbsp;&nbsp;&nbsp;&nbsp;({copper_html})
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+USD: ₹ {usd_price:.2f} &nbsp;&nbsp;&nbsp;&nbsp;({usd_html})
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+EUR: ₹ {latest['EUR_INR']:.2f} &nbsp;&nbsp;&nbsp;&nbsp;({eur_html})
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+GBP: ₹ {latest['GBP_INR']:.2f} &nbsp;&nbsp;&nbsp;&nbsp;({gbp_html})
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+Crude Oil: ₹ {latest['Crude_Oil_INR_per_barrel']:.2f} &nbsp;&nbsp;&nbsp;&nbsp;({crude_html})
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+Brent Oil: ₹ {latest['Brent_Oil_INR_per_barrel']:.2f} &nbsp;&nbsp;&nbsp;&nbsp;({brent_html})
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+Natural Gas: ₹ {latest['Natural_Gas_INR']:.2f} &nbsp;&nbsp;&nbsp;&nbsp;({gas_html})
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; |
 """.replace("\n", " ")
 
 #  RENDER
@@ -295,24 +326,29 @@ st.markdown(f"""
     padding: 10px 0;
 }}
 
-.ticker-text {{
-    display: inline-block;
-    white-space: nowrap;
-    animation: scroll-left 12s linear infinite;
-    color: white;
-    font-size: 17px;
-    padding-left: 100%;
+.ticker-track {{
+    display: flex;
+    width: max-content;
+    animation: scroll 25s linear infinite;
 }}
 
-@keyframes scroll-left {{
-    0% {{ transform: translateX(0%); }}
-    100% {{ transform: translateX(-100%); }}
+.ticker-item {{
+    white-space: nowrap;
+    color: white;
+    font-size: 17px;
+    padding-right: 50px;
+}}
+
+@keyframes scroll {{
+    0% {{ transform: translateX(0); }}
+    100% {{ transform: translateX(-50%); }}
 }}
 </style>
 
 <div class="ticker-container">
-    <div class="ticker-text">
-        {ticker_text}
+    <div class="ticker-track">
+        <div class="ticker-item">{ticker_text}</div>
+        <div class="ticker-item">{ticker_text}</div>
     </div>
 </div>
 """, unsafe_allow_html=True)
@@ -490,30 +526,35 @@ def get_prediction(df, metal):
 
     else:
         return None
+# ---------- COMMON STYLE ----------
+def render_card(title, value, change=None):
+    arrow = ""
+    color = "#aaa"
+
+    if change is not None:
+        arrow = "▲" if change > 0 else "▼"
+        color = "#00ff99" if change > 0 else "#ff4d4d"
+        change_html = f"""
+        <span style="color:{color}; font-size:16px; margin-left:8px;">
+        ({arrow} {abs(change):.2f})
+        </span>
+        """
+    else:
+        change_html = ""
+
+    st.markdown(f"""
+        <div style="display:flex; flex-direction:column; gap:6px;">
+            <span style="color:#aaa; font-size:14px;">{title}</span>
+            <span style="font-size:36px; font-weight:400;">₹ {value:.2f} {change_html}</span>
+        </div>
+        """, unsafe_allow_html=True)
+    
 #  COMMON UI
 def show_section(asset):
 
     styled_subheader(f"{asset} Overview")
-
-    colA, colB = st.columns(2)
-
     max_date = df['Date'].max().date()
-
-    # ---------------- DATE ----------------
-    with colA:
-        min_date = df['Date'].min().date()
-        today = datetime.now().date()
-        max_future_date = today + timedelta(days=7)
-
-        selected_date = st.date_input(
-            "Choose Date",
-            value=max_date,
-            min_value=min_date,
-            max_value=max_future_date,
-            key=f"{asset}_date"
-        )
-
-    # ---------------- TYPE ----------------
+# ---------------- TYPE ----------------
     if asset in ["Gold_24K", "Gold_22K", "Gold_18K", "Silver", "Platinum", "Palladium", "Copper"]:
         asset_type = "metal"
     elif asset in ["USD", "EUR", "GBP"]:
@@ -521,7 +562,31 @@ def show_section(asset):
     else:
         asset_type = "energy"
 
-    # ---------------- WEIGHT / UNIT ----------------
+
+# ---------------- LAYOUT ----------------
+    if asset_type == "currency":
+    # FULL WIDTH DATE
+        selected_date = st.date_input(
+            "Choose Date",
+            value=max_date,
+            min_value=df['Date'].min().date(),
+            max_value=datetime.now().date() + timedelta(days=7),
+            key=f"{asset}_date"
+        )
+    else:
+        colA, colB = st.columns(2)
+
+        with colA:
+            selected_date = st.date_input(
+                "Choose Date",
+                value=max_date,
+                min_value=df['Date'].min().date(),
+                max_value=datetime.now().date() + timedelta(days=7),
+                key=f"{asset}_date"
+            )
+
+
+# ---------------- WEIGHT / UNIT ----------------
     if asset_type == "metal":
         with colB:
             selected_weight = st.selectbox(
@@ -542,11 +607,25 @@ def show_section(asset):
 
     else:
         with colB:
-            st.write("Unit: Barrel")
+            selected_weight = st.selectbox(
+            "Select Volume",
+            ["1 Barrel", "10 Barrel", "100 Barrel", "1000 Barrel"],
+            index=0,
+            key=f"{asset}_barrel"
+            )
 
-        selected_weight = "barrel"
-        multiplier = 1
-        base_col = f"{asset}_INR_per_barrel"
+        barrel_map = {
+            "1 Barrel": 1,
+            "10 Barrel": 10,
+            "100 Barrel": 100,
+            "1000 Barrel": 1000
+        }
+
+        multiplier = barrel_map[selected_weight]
+        if asset == "Natural_Gas":
+            base_col = "Natural_Gas_INR"
+        else:
+            base_col = f"{asset}_INR_per_barrel"
 
     # ---------------- VALIDATION ----------------
     if base_col not in df.columns:
@@ -588,40 +667,59 @@ def show_section(asset):
         yesterday_price = float(temp_df.iloc[-2][base_col]) * multiplier
 
     change = today_price - yesterday_price
-    arrow = "▲" if change > 0 else "▼"
 
     # ---------------- METRICS ----------------
-    col1, col2, col3, col4 = st.columns(4)
 
+    col1, col2, col3, col4 = st.columns(4)
+# ---------- SELECTED ----------
+    with col1:
+        render_card("📅 Selected Day", today_price, change)
+
+# ---------- PREVIOUS ----------
+    with col2:
+        render_card("🗓️ Previous Day", yesterday_price)
+
+# ---------- HIGHEST ----------
+    with col3:
+        render_card("📈 Highest", df[base_col].max() * multiplier)
+
+# ---------- LOWEST ----------
+    with col4:
+        render_card("📉 Lowest", df[base_col].min() * multiplier)
+
+
+# ---------- PREDICTION ----------
     try:
         prediction_base = get_prediction(df, asset)
         prediction = prediction_base * multiplier
 
         pred_change = prediction - today_price
 
-        col1.metric(
-            "🎯 Predicted Next Day",
-            f"₹ {prediction:.2f}",
-            f"{'▲' if pred_change > 0 else '▼'} {abs(pred_change):.2f}"
-        )
-    except:
-        col1.metric("🎯 Predicted Next Day", "N/A")
+        st.markdown("<br>", unsafe_allow_html=True)
 
-    col2.metric("📅 Selected Day", f"₹ {today_price:.2f}", f"{arrow} {abs(change):.2f}")
-    col3.metric("📈 Highest", f"₹ {(df[base_col].max() * multiplier):.2f}")
-    col4.metric("📉 Lowest", f"₹ {(df[base_col].min() * multiplier):.2f}")
+        render_card("🎯 Predicted Next Day", prediction, pred_change)
 
-    st.caption(f"Selected Date: {selected_date} | Weight: {selected_weight}")
-
+    except Exception as e:
+        st.error(f"Prediction error: {e}")
+    if asset in ["USD", "EUR", "GBP"]:
+        st.caption(f"Selected Date: {selected_date}")
+    elif asset_type == "metal":
+        st.caption(f"Selected Date: {selected_date} | Weight: {selected_weight}")
+    else:
+        st.caption(f"Selected Date: {selected_date} | Volume: {selected_weight}")
     # ---------------- PRICE TABLE ----------------
-    styled_subheader("Price Table")
-
-    if asset_type == "metal":
-        weights = ["1g", "10g", "100g", "1kg"]
+    if asset_type in ["metal", "energy"]:
+        styled_subheader("Price Table")
+        if asset_type == "metal":
+            weights = ["1g", "10g", "100g", "1kg"]
+            weight_map = {"1g":1, "10g":10, "100g":100, "1kg":1000}
+        else:
+            weights = ["1 Barrel", "10 Barrel", "100 Barrel", "1000 Barrel"]
+            weight_map = {"1 Barrel":1, "10 Barrel":10, "100 Barrel":100, "1000 Barrel":1000}
         rows = []
 
         for w in weights:
-            mul = {"1g":1, "10g":10, "100g":100, "1kg":1000}[w]
+            mul = weight_map[w]
 
             t = float(selected_row[base_col]) * mul
 
@@ -638,7 +736,7 @@ def show_section(asset):
             )
 
             rows.append({
-                "Gram": w,
+                "Unit": w if asset_type == "metal" else w.replace("g", "Barrel"),
                 "Today": f"₹{t:,.2f}",
                 "Yesterday": f"₹{y:,.2f}",
                 "Change": change_html
@@ -652,13 +750,16 @@ def show_section(asset):
     future_preds = []
     future_dates = []
 
+    start_date = pd.to_datetime(selected_date)
     temp_df = df.copy()
 
+    if selected_date > max_date:
+        temp_df = temp_df.copy()
     for i in range(7):
         next_pred = get_prediction(temp_df, asset)
 
         future_preds.append(next_pred * multiplier)
-        future_dates.append(df['Date'].max() + timedelta(days=i+1))
+        future_dates.append(start_date + timedelta(days=i+1))
 
         new_row = temp_df.iloc[-1].copy()
         new_row['Date'] += timedelta(days=1)
@@ -691,25 +792,30 @@ def show_section(asset):
     # ---------------- GRAPH ----------------
     styled_subheader("Price Trend")
 
-    range_option = st.radio(
-        "Select Range",
-        ["1W", "1M", "3M", "6M", "1Y", "ALL"],
-        horizontal=True,
-        index=5,
-        key=f"{asset}_range"
-    )
+    btn_cols = st.columns(6)
+
+    ranges = ["1W", "1M", "3M", "6M", "1Y", "ALL"]
+
+    selected_range = None
+
+    for i, r in enumerate(ranges):
+        if btn_cols[i].button(r, key=f"{asset}_btn_{r}"):
+            selected_range = r
+
+    if selected_range is None:
+        selected_range = "ALL"
 
     dff = df.copy()
 
-    if range_option == "1W":
+    if selected_range == "1W":
         dff = df.tail(7)
-    elif range_option == "1M":
+    elif selected_range == "1M":
         dff = df.tail(30)
-    elif range_option == "3M":
+    elif selected_range == "3M":
         dff = df.tail(90)
-    elif range_option == "6M":
+    elif selected_range == "6M":
         dff = df.tail(180)
-    elif range_option == "1Y":
+    elif selected_range == "1Y":
         dff = df.tail(365)
 
     fig = go.Figure()
@@ -742,18 +848,18 @@ def show_section(asset):
 tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13, tab14 = st.tabs([
     "🪙 Gold 24K",
     "🧈 Gold 22K",
-    "💎 Gold 18K",
+    "🟡 Gold 18K",
     "🔘 Silver",
+    "🪨 Platinum",
+    "☢️ Palladium",
+    "🥮 Copper",
     "💱 USD",
     "💶 EUR",
     "💷 GBP",
-    "⚪ Platinum",
-    "🔵 Palladium",
-    "🟠 Copper",
-    "🛢 Crude Oil",
-    "🛢 Brent Oil",
-    "🔥 Natural Gas",
-    "📊 Model Performance"
+    "⛽ Crude Oil",
+    "🛢️ Brent Oil",
+    "♨️ Natural Gas",
+    "🌟 Model Performance"
 ])
 
 
@@ -779,32 +885,32 @@ with tab4:
 
 # ---------------- TAB 5 ----------------
 with tab5:
-    show_section("USD")
+    show_section("Platinum")
 
 
 # ---------------- TAB 6 ----------------
 with tab6:
-    show_section("EUR")
+    show_section("Palladium")
 
 
 # ---------------- TAB 7 ----------------
 with tab7:
-    show_section("GBP")
+    show_section("Copper")
 
 
 # ---------------- TAB 8 ----------------
 with tab8:
-    show_section("Platinum")
+    show_section("USD")
 
 
 # ---------------- TAB 9 ----------------
 with tab9:
-    show_section("Palladium")
+    show_section("EUR")
 
 
 # ---------------- TAB 10 ----------------
 with tab10:
-    show_section("Copper")
+    show_section("GBP")
 
 
 # ---------------- TAB 11 ----------------
@@ -857,6 +963,24 @@ with tab14:
         pass
 
     table_df = pd.DataFrame(rows)
+    # ---- ADD MEAN R2 ROW ----
+    r2_values = []
+
+    for row in rows:
+        try:
+            r2_values.append(float(row["R² Score"]))
+        except:
+            pass
+
+    if r2_values:
+        mean_r2 = sum(r2_values) / len(r2_values)
+
+        table_df.loc[len(table_df)] = {
+            "Model": "Model R² Accuracy (Mean)",
+            "MAE": "-",
+            "RMSE": "-",
+            "R² Score": f"{mean_r2:.4f}"
+        }
 
     st.markdown(
         table_df.to_html(escape=False, index=False),

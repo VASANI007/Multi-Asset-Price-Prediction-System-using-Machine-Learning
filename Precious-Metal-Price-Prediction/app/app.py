@@ -122,11 +122,16 @@ def styled_subheader(text):
     </h3><br>
     """, unsafe_allow_html=True)
 
+
+@st.cache_data(ttl=3600)   # 1 hour cache
+def load_data():
+    fetch_all()
+    preprocess()
+    return True
 #  AUTO REFRESH
 with st.spinner(" Fetching market data..."):
     try:
-        fetch_all()
-        preprocess()
+        load_data()
     except Exception as e:
         st.warning(f"Data update skipped: {e}")
 
@@ -211,7 +216,8 @@ def load_usd_full():
 
 
 usd = load_usd_full()
-
+if "popup" not in st.session_state:
+    st.session_state.popup = None
 
 # ---------------- CHANGE CALCULATION ----------------
 g24_change = latest['Gold_24K_1g'] - previous['Gold_24K_1g']
@@ -990,6 +996,224 @@ with tab14:
     st.markdown("---")
 
     st.success("Models evaluated using cross-validation (TimeSeriesSplit)")
+
+
+def show_popup(asset, latest):
+
+    # FULL SCREEN LOCK (prevents background scroll)
+    st.markdown("""
+    <style>
+    body {overflow:hidden;}
+
+    .popup-overlay {
+        position: fixed;
+        top:0; left:0;
+        width:100vw; height:100vh;
+        background: rgba(0,0,0,0.75);
+        backdrop-filter: blur(10px);
+        z-index: 9999;
+    }
+
+    .popup-box {
+        position: fixed;
+        top:50%; left:50%;
+        transform: translate(-50%, -50%);
+        width: 950px;
+        max-width: 95%;
+        background: rgba(15,15,15,0.95);
+        border-radius: 20px;
+        padding: 25px;
+        z-index: 10000;
+        box-shadow: 0 0 50px rgba(255,0,0,0.4);
+        animation: zoomIn 0.25s ease;
+        cursor: move;
+    }
+
+    @keyframes zoomIn {
+        from {transform: translate(-50%, -60%) scale(0.9); opacity:0;}
+        to {transform: translate(-50%, -50%) scale(1); opacity:1;}
+    }
+    </style>
+
+    <div class="popup-overlay" id="overlay"></div>
+    <div class="popup-box" id="popup">
+    """, unsafe_allow_html=True)
+
+    # HEADER
+    col1, col2 = st.columns([10,1])
+
+    with col1:
+        st.markdown(f"### {asset} Calculator")
+
+    with col2:
+        if st.button("❌", key=f"close_{asset}"):
+            st.session_state.popup = None
+            st.rerun()
+
+    premium_calculator(asset, latest)
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    # JS (DRAG + ESC + CLICK OUTSIDE)
+    st.markdown("""
+    <script>
+    const popup = window.parent.document.getElementById("popup");
+    const overlay = window.parent.document.getElementById("overlay");
+
+    // DRAG
+    let isDown = false, offsetX, offsetY;
+
+    popup.onmousedown = function(e){
+        isDown = true;
+        offsetX = e.clientX - popup.offsetLeft;
+        offsetY = e.clientY - popup.offsetTop;
+    };
+
+    document.onmouseup = () => isDown = false;
+
+    document.onmousemove = function(e){
+        if(!isDown) return;
+        popup.style.left = (e.clientX - offsetX) + "px";
+        popup.style.top = (e.clientY - offsetY) + "px";
+        popup.style.transform = "none";
+    };
+
+    // CLICK OUTSIDE CLOSE
+    overlay.onclick = function(){
+        window.parent.postMessage({type:"streamlit:setComponentValue", value:"close"}, "*");
+    };
+
+    // ESC CLOSE
+    document.addEventListener("keydown", function(e){
+        if(e.key === "Escape"){
+            window.parent.postMessage({type:"streamlit:setComponentValue", value:"close"}, "*");
+        }
+    });
+    </script>
+    """, unsafe_allow_html=True)
+
+
+def premium_calculator(asset, latest):
+
+    price_map = {
+        "Gold": latest["Gold_24K_1g"],
+        "Silver": latest["Silver_1g"],
+        "Platinum": latest["Platinum_1g"],
+        "Palladium": latest["Palladium_1g"],
+        "Copper": latest["Copper_1g"]
+    }
+
+    prefix = f"popup_{asset}"
+
+    if f"{prefix}_mode" not in st.session_state:
+        st.session_state[f"{prefix}_mode"] = "amount"
+
+    mode = st.session_state[f"{prefix}_mode"]
+
+    # -------- GLOW SLIDER CSS --------
+    st.markdown("""
+    <style>
+    .stSlider > div > div {
+        background: linear-gradient(90deg,#ff0000,#ff4d4d);
+        box-shadow: 0 0 10px red;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+    c1, c2 = st.columns(2)
+
+    if c1.button("💎 Weight", key=f"{prefix}_w"):
+        st.session_state[f"{prefix}_mode"] = "weight"
+
+    if c2.button("💰 Amount", key=f"{prefix}_a"):
+        st.session_state[f"{prefix}_mode"] = "amount"
+
+    mode = st.session_state[f"{prefix}_mode"]
+
+    left, right = st.columns([1,1.2])
+
+    with left:
+
+        if mode == "amount":
+            amount = st.slider("Amount (₹)", 0, 1000000, 10000, key=f"{prefix}_amt")
+            making = st.slider("Making (%)", 0, 50, 10, key=f"{prefix}_m")
+            gst = st.checkbox("GST", True, key=f"{prefix}_g")
+
+            price = price_map[asset]
+
+            base = amount / (1 + making/100)
+            weight = base / price
+
+        else:
+            qty = st.slider("Weight (g)", 1, 1000, 10, key=f"{prefix}_qty")
+            making = st.slider("Making (%)", 0, 50, 10, key=f"{prefix}_m2")
+            gst = st.checkbox("GST", True, key=f"{prefix}_g2")
+
+            price = price_map[asset]
+
+            base = qty * price
+            weight = qty
+
+        making_amt = base * (making/100)
+        subtotal = base + making_amt
+        gst_amt = subtotal * 0.03 if gst else 0
+        total = subtotal + gst_amt
+
+    with right:
+
+        # 🔥 SMOOTH NUMBER ANIMATION
+        st.markdown(f"""
+        <div style="
+            background:linear-gradient(135deg,#7f1d1d,#dc2626);
+            padding:30px;
+            border-radius:20px;
+            text-align:center;
+            color:white;
+            box-shadow:0 0 40px rgba(255,0,0,0.4);
+        ">
+            <h3>{asset}</h3>
+
+            <h1 id="counter" style="font-size:40px;">
+            {"{:.3f}".format(weight) if mode=='amount' else "{:,.0f}".format(total)}
+            </h1>
+
+            <p>Current ₹ {price:.0f}/g</p>
+        </div>
+
+        <script>
+        const el = window.parent.document.getElementById("counter");
+        if(el){{
+            let val = parseFloat(el.innerText.replace(/,/g,''));
+            let start = val * 0.9;
+            let i = start;
+
+            const step = (val - start)/20;
+
+            const anim = setInterval(()=>{{
+                i += step;
+                el.innerText = i.toFixed(2);
+                if(i >= val) clearInterval(anim);
+            }},20);
+        }}
+        </script>
+        """, unsafe_allow_html=True)
+
+with st.sidebar:
+    st.markdown("### 🧮 Calculator")
+
+    if st.button("Gold"):
+        st.session_state.popup = "Gold"
+    if st.button("Silver"):
+        st.session_state.popup = "Silver"
+    if st.button("Platinum"):
+        st.session_state.popup = "Platinum"
+    if st.button("Palladium"):
+        st.session_state.popup = "Palladium"
+    if st.button("Copper"):
+        st.session_state.popup = "Copper"
+
+if st.session_state.popup:
+    show_popup(st.session_state.popup, latest)
 #  FOOTER
 st.markdown("---")
 st.caption("© 2026 • Developed by Daksh Vasani | Advanced Analytics • Machine Learning • Financial Insights")

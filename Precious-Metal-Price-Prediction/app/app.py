@@ -8,9 +8,10 @@ import joblib
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
+import time
 import streamlit as st
 import yfinance as yf
-
+import plotly.graph_objects as go
 from src.data.fetch_data import fetch_all
 from src.processing.preprocess import preprocess
 
@@ -22,7 +23,7 @@ st.set_page_config(page_title="Financial Market Intelligence", page_icon="💰",
 st.markdown("""
 <h1 style='
     color:white;
-    border-left:6px solid #888;
+    border-left:6px solid #dd0000;
     padding-left:12px;
     font-weight:bold;
 '>
@@ -127,17 +128,7 @@ def styled_subheader(text):
 def load_data():
     fetch_all()
     preprocess()
-    return True
-#  AUTO REFRESH
-with st.spinner(" Fetching market data..."):
-    try:
-        load_data()
-    except Exception as e:
-        st.warning(f"Data update skipped: {e}")
 
-
-#  LOAD DATA
-def load_data():
     try:
         df = pd.read_csv("data/processed/final_data.csv")
 
@@ -152,6 +143,13 @@ def load_data():
     except Exception as e:
         st.error("Failed to load data. Please update data.")
         return pd.DataFrame()
+#  AUTO REFRESH
+with st.spinner(" Fetching market data..."):
+    try:
+        load_data()
+    except Exception as e:
+        st.warning(f"Data update skipped: {e}")
+
 # LOAD MODEL
 try:
     # CORE MODELS
@@ -216,8 +214,7 @@ def load_usd_full():
 
 
 usd = load_usd_full()
-if "popup" not in st.session_state:
-    st.session_state.popup = None
+
 
 # ---------------- CHANGE CALCULATION ----------------
 g24_change = latest['Gold_24K_1g'] - previous['Gold_24K_1g']
@@ -377,7 +374,7 @@ def create_gold_input(df):
     ratio = gold18 / lag1 if lag1 != 0 else 0
     day = df['Date'].iloc[-1].dayofweek
 
-    return pd.DataFrame([[ 
+    return pd.DataFrame([[
         lag1, lag2, lag3,
         ma7, ma30,
         usd, usd_change,
@@ -405,7 +402,7 @@ def create_silver_input(df):
     usd = df['USD_INR'].iloc[-1]
     usd_change = df['USD_INR'].pct_change().iloc[-1] if len(df) > 1 else 0
 
-    return pd.DataFrame([[ 
+    return pd.DataFrame([[
         lag1, lag2, lag3,
         ma3, ma7,
         usd,
@@ -476,6 +473,314 @@ def create_metal_input(df, col):
         'USD_INR','USD_Change'
     ])
     
+
+# ================= POPUP =================
+@st.dialog(" ", width="large")
+def show_popup(asset, latest):
+
+    icon_map = {
+        "Gold": "🧈",
+        "Silver": "🔘",
+        "Platinum": "🪨",
+        "Palladium": "☢️",
+        "Copper": "🥮"
+    }
+
+    icon = icon_map.get(asset, "⚖️")
+
+    st.markdown(f"## {icon} {asset} Calculator")
+
+    premium_calculator(asset, latest)
+
+
+# ================= MAIN =================
+
+def premium_calculator(asset, latest):
+
+    price_map = {
+        "Gold": latest["Gold_24K_1g"],
+        "Silver": latest["Silver_1g"],
+        "Platinum": latest["Platinum_1g"],
+        "Palladium": latest["Palladium_1g"],
+        "Copper": latest["Copper_1g"]
+    }
+
+    prefix = f"popup_{asset}"
+
+    # ---------- STATE ----------
+    st.session_state.setdefault(f"{prefix}_mode", "weight")
+    st.session_state.setdefault(f"{prefix}_purity", "24K")
+
+    st.session_state.setdefault(f"{prefix}_val", 10)
+    st.session_state.setdefault(f"{prefix}_val_amt", 10000)
+    st.session_state.setdefault(f"{prefix}_unit", "Gram")
+
+    left, right = st.columns([1, 1.2])
+
+    # ================= LEFT =================
+    with left:
+
+        c1, c2 = st.columns(2)
+
+        if c1.button("Calculate By Weight", key=f"{prefix}_w"):
+            st.session_state[f"{prefix}_mode"] = "weight"
+
+        if c2.button("Calculate By Amount", key=f"{prefix}_a"):
+            st.session_state[f"{prefix}_mode"] = "amount"
+
+        mode = st.session_state[f"{prefix}_mode"]
+        purity = st.session_state[f"{prefix}_purity"]
+
+        # ---------- GOLD ----------
+        if asset == "Gold":
+            st.markdown("### Gold Purity")
+            p1, p2, p3 = st.columns(3)
+
+            if p1.button("24K"): st.session_state[f"{prefix}_purity"] = "24K"
+            if p2.button("22K"): st.session_state[f"{prefix}_purity"] = "22K"
+            if p3.button("18K"): st.session_state[f"{prefix}_purity"] = "18K"
+
+        purity = st.session_state[f"{prefix}_purity"]
+
+        # ---------- PRICE ----------
+        base_price = price_map[asset]
+
+        if asset == "Gold":
+            purity_map = {"24K":1, "22K":22/24, "18K":18/24}
+            price = base_price * purity_map.get(purity, 1)
+        else:
+            price = base_price
+
+        # ---------- UNIT ----------
+        unit_map = {
+            "Gram": 1,
+            "Sovereign / Pavan": 8,
+            "Tola": 11.664,
+            "KG": 1000
+        }
+
+        # ================= MODE: WEIGHT =================
+        if mode == "weight":
+
+            q1, q2 = st.columns([3, 1])
+
+            # ✅ unit define first
+            with q2:
+                unit = st.selectbox(
+                    "Unit",
+                    ["Gram", "Sovereign / Pavan", "Tola", "KG"],
+                    key=f"{prefix}_unit"
+                )
+
+            multiplier = unit_map[unit]
+            max_val = 1000 if unit == "Gram" else 100
+
+            # ---------- STATE ----------
+            if f"{prefix}_input" not in st.session_state:
+                st.session_state[f"{prefix}_input"] = st.session_state[f"{prefix}_val"]
+
+            if f"{prefix}_slider" not in st.session_state:
+                st.session_state[f"{prefix}_slider"] = st.session_state[f"{prefix}_val"]
+
+            # ---------- LIMIT ----------
+            st.session_state[f"{prefix}_val"] = min(st.session_state[f"{prefix}_val"], max_val)
+            st.session_state[f"{prefix}_input"] = min(st.session_state[f"{prefix}_input"], max_val)
+            st.session_state[f"{prefix}_slider"] = min(st.session_state[f"{prefix}_slider"], max_val)
+
+            # ---------- SYNC ----------
+            if st.session_state[f"{prefix}_input"] != st.session_state[f"{prefix}_val"]:
+                st.session_state[f"{prefix}_val"] = st.session_state[f"{prefix}_input"]
+            elif st.session_state[f"{prefix}_slider"] != st.session_state[f"{prefix}_val"]:
+                st.session_state[f"{prefix}_val"] = st.session_state[f"{prefix}_slider"]
+
+            st.session_state[f"{prefix}_input"] = st.session_state[f"{prefix}_val"]
+            st.session_state[f"{prefix}_slider"] = st.session_state[f"{prefix}_val"]
+
+            # ---------- UI ----------
+            with q1:
+                st.number_input("Quantity", 1, max_val, key=f"{prefix}_input")
+
+            st.slider(" ", 1, max_val, key=f"{prefix}_slider")
+
+            qty = st.session_state[f"{prefix}_val"]
+            qty_grams = qty * multiplier
+
+            # ✅ FIX: add missing calculations
+            making = st.slider("Making Charge (%)", 0, 50, 10)
+            gst = st.checkbox("Include GST (3%)", True)
+
+            base = qty_grams * price
+
+        # ================= MODE: AMOUNT =================
+        else:
+
+            if f"{prefix}_amt_input" not in st.session_state:
+                st.session_state[f"{prefix}_amt_input"] = st.session_state[f"{prefix}_val_amt"]
+            if f"{prefix}_amt_slider" not in st.session_state:
+                st.session_state[f"{prefix}_amt_slider"] = st.session_state[f"{prefix}_val_amt"]
+
+            if st.session_state[f"{prefix}_amt_input"] != st.session_state[f"{prefix}_val_amt"]:
+                st.session_state[f"{prefix}_val_amt"] = st.session_state[f"{prefix}_amt_input"]
+            elif st.session_state[f"{prefix}_amt_slider"] != st.session_state[f"{prefix}_val_amt"]:
+                st.session_state[f"{prefix}_val_amt"] = st.session_state[f"{prefix}_amt_slider"]
+
+            st.session_state[f"{prefix}_amt_input"] = st.session_state[f"{prefix}_val_amt"]
+            st.session_state[f"{prefix}_amt_slider"] = st.session_state[f"{prefix}_val_amt"]
+
+            st.number_input("Amount (₹)", 0, 1000000, key=f"{prefix}_amt_input")
+            st.slider("Amount", 0, 1000000, key=f"{prefix}_amt_slider")
+
+            amount = st.session_state[f"{prefix}_val_amt"]
+            original_amount = amount
+            making = st.slider("Making Charge (%)", 0, 50, 10)
+            gst = st.checkbox("Include GST (3%)", True)
+            
+            if amount <= 0:
+                base = 0
+                qty = 0
+            else:
+                base = amount / (1 + making/100)
+                qty = base / price if price > 0 else 0
+
+            if making > 0:
+                base = amount / (1 + making/100)
+            else:
+                base = amount
+            qty_grams = qty
+
+        # ---------- FINAL CALC ----------
+        making_amt = base * (making/100)
+        subtotal = base + making_amt
+        gst_amt = subtotal * 0.03 if gst else 0
+        total = subtotal + gst_amt
+
+    # ================= RIGHT =================
+    with right:
+
+        placeholder = st.empty()
+        steps = 25
+
+        for i in range(steps+1):
+
+            if mode == "amount":
+                val = qty_grams * (i/steps)
+                text = f"{val:.3f} g"
+                title = f"{asset} Weight"
+            else:
+                val = int(total * (i/steps))
+                text = f"₹ {val:,}"
+                title = "Total Amount"
+
+            placeholder.markdown(f"""
+            <div style="background:#16a34a;padding:25px;border-radius:15px;color:white">
+                <h3>{title}</h3>
+                <h1 style="font-size:42px;">{text}</h1>
+            </div>
+            """, unsafe_allow_html=True)
+
+            time.sleep(0.008)
+
+        # ---------- BREAKDOWN ----------
+        st.markdown("### Calculation Breakdown")
+
+        def row(label, final, is_money=True):
+            ph = st.empty()
+            for i in range(20):
+                val = final * (i/20)
+                txt = f"₹ {int(val):,}" if is_money else f"{val:.3f} g"
+                ph.markdown(f"""
+                <div style="display:flex;justify-content:space-between;padding:8px 0;">
+                    <span>{label}</span>
+                    <b>{txt}</b>
+                </div>
+                """, unsafe_allow_html=True)
+                time.sleep(0.004)
+
+        if mode == "amount":
+            row("Amount Available", original_amount)
+        else:
+            row("Weight", qty_grams, False)
+
+        row("Base Value", base)
+        row("Making Charges", making_amt)
+
+        st.markdown("<hr>", unsafe_allow_html=True)
+
+        row("Subtotal", subtotal)
+        row("GST (3%)", gst_amt)
+
+        st.markdown(f"""
+        <div style="margin-top:15px;background:#15803d;padding:15px;border-radius:12px;color:white;font-weight:bold;display:flex;justify-content:space-between;">
+            <span>{"Final Weight" if mode=="amount" else "Total Amount"}</span>
+            <span>{"{:.3f} g".format(qty_grams) if mode=="amount" else "₹ {:,}".format(int(total))}</span>
+        </div>
+        """, unsafe_allow_html=True)
+# ================= SIDEBAR =================
+with st.sidebar:
+    st.markdown("""
+    <style>
+    [data-testid="stSidebar"] [data-testid="stElementContainer"] {
+        width: 100% !important;
+    }
+
+    [data-testid="stSidebar"] button {
+        width: 100% !important;
+        height: 55px !important;
+        border-radius: 12px !important;
+        font-size: 16px !important;
+        font-weight: 600 !important;
+        text-align: left !important;
+        padding-left: 15px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+    }
+    
+    [data-testid="stSidebar"] button div p {
+        width: 100% !important;
+        text-align: left !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+
+    # Professional Header Structure
+    st.markdown("""
+        <h2 style='
+            color:white;
+            border-left:6px solid #00a600;
+            padding-left:12px;
+            font-weight:bold;'header-text">⚖️ Metal Calculator</h2>
+        """, unsafe_allow_html=True)
+    st.markdown("<div style='height:20px;'></div>", unsafe_allow_html=True)
+
+    if st.button("Gold"):
+        st.session_state.popup = "Gold"
+
+    if st.button("Silver"):
+        st.session_state.popup = "Silver"
+
+    if st.button("Platinum"):
+        st.session_state.popup = "Platinum"
+
+    if st.button("Palladium"):
+        st.session_state.popup = "Palladium"
+
+    if st.button("Copper"):
+        st.session_state.popup = "Copper"
+
+
+# ================= TRIGGER =================
+if "popup" not in st.session_state:
+    st.session_state.popup = None
+
+if st.session_state.popup:
+    asset_to_show = st.session_state.popup
+    st.session_state.popup = None
+    show_popup(asset_to_show, latest)
+
+
+
 def get_prediction(df, metal):
 
     if metal == "Gold_24K":
@@ -937,7 +1242,7 @@ with tab13:
 # ---------------- TAB 14 (FINAL) ----------------
 with tab14:
 
-    styled_subheader("📊 Model Performance (All Assets)")
+    styled_subheader("🎯 Model Performance (All Assets)")
 
     rows = []
 
@@ -949,19 +1254,16 @@ with tab14:
                 "RMSE": f"{metrics.get('RMSE', 0):.2f}",
                 "R² Score": f"{metrics.get('R2', 0):.4f}"
             })
-
-    # REQUIRED
-    add_row("Gold", gold_metrics)
-    add_row("Silver", silver_metrics)
-    add_row("USD", usd_metrics)
-
-    # OPTIONAL (if available)
     try:
-        add_row("EUR", eur_metrics)
-        add_row("GBP", gbp_metrics)
+    # REQUIRED
+        add_row("Gold", gold_metrics)
+        add_row("Silver", silver_metrics)
         add_row("Platinum", platinum_metrics)
         add_row("Palladium", palladium_metrics)
         add_row("Copper", copper_metrics)
+        add_row("USD", usd_metrics)
+        add_row("EUR", eur_metrics)
+        add_row("GBP", gbp_metrics)
         add_row("Crude Oil", crude_metrics)
         add_row("Brent Oil", brent_metrics)
         add_row("Natural Gas", gas_metrics)
@@ -969,251 +1271,112 @@ with tab14:
         pass
 
     table_df = pd.DataFrame(rows)
-    # ---- ADD MEAN R2 ROW ----
-    r2_values = []
 
-    for row in rows:
-        try:
-            r2_values.append(float(row["R² Score"]))
-        except:
-            pass
+    # ---------- MEAN R2 ----------
+    r2_values = [float(r["R² Score"]) for r in rows]
 
     if r2_values:
         mean_r2 = sum(r2_values) / len(r2_values)
 
         table_df.loc[len(table_df)] = {
-            "Model": "Model R² Accuracy (Mean)",
+            "Model": "Model R² Accuracy (Average)",
             "MAE": "-",
             "RMSE": "-",
             "R² Score": f"{mean_r2:.4f}"
         }
 
+    # ---------- TABLE ----------
     st.markdown(
-        table_df.to_html(escape=False, index=False),
+        table_df.to_html(index=False),
         unsafe_allow_html=True
     )
 
     st.markdown("---")
 
-    st.success("Models evaluated using cross-validation (TimeSeriesSplit)")
+    plot_df = table_df[table_df["Model"] != "Model R² Accuracy (Average)"].copy()
+    plot_df["R2_float"] = plot_df["R² Score"].astype(float)
+    # ---------- 📘 METRICS EXPLANATION ----------
+    styled_subheader("📘 Calculation Metrics Explained")
 
-
-def show_popup(asset, latest):
-
-    # FULL SCREEN LOCK (prevents background scroll)
-    st.markdown("""
-    <style>
-    body {overflow:hidden;}
-
-    .popup-overlay {
-        position: fixed;
-        top:0; left:0;
-        width:100vw; height:100vh;
-        background: rgba(0,0,0,0.75);
-        backdrop-filter: blur(10px);
-        z-index: 9999;
-    }
-
-    .popup-box {
-        position: fixed;
-        top:50%; left:50%;
-        transform: translate(-50%, -50%);
-        width: 950px;
-        max-width: 95%;
-        background: rgba(15,15,15,0.95);
-        border-radius: 20px;
-        padding: 25px;
-        z-index: 10000;
-        box-shadow: 0 0 50px rgba(255,0,0,0.4);
-        animation: zoomIn 0.25s ease;
-        cursor: move;
-    }
-
-    @keyframes zoomIn {
-        from {transform: translate(-50%, -60%) scale(0.9); opacity:0;}
-        to {transform: translate(-50%, -50%) scale(1); opacity:1;}
-    }
-    </style>
-
-    <div class="popup-overlay" id="overlay"></div>
-    <div class="popup-box" id="popup">
-    """, unsafe_allow_html=True)
-
-    # HEADER
-    col1, col2 = st.columns([10,1])
+    col1, col2, col3 = st.columns(3)
 
     with col1:
-        st.markdown(f"### {asset} Calculator")
+        st.markdown("""
+        ### 📏 MAE (Mean Absolute Error)
+        - Average error between actual & predicted
+        - Lower = Better
+
+        **Formula:**
+        MAE = Σ|Actual - Predicted| / n
+        """)
 
     with col2:
-        if st.button("❌", key=f"close_{asset}"):
-            st.session_state.popup = None
-            st.rerun()
+        st.markdown("""
+        ### 📐 RMSE (Root Mean Square Error)
+        - Penalizes large errors more
+        - Sensitive to outliers
 
-    premium_calculator(asset, latest)
+        **Formula:**
+        RMSE = √(Σ(Actual - Predicted)² / n)
+        """)
 
-    st.markdown("</div>", unsafe_allow_html=True)
+    with col3:
+        st.markdown("""
+        ### 🎯 R² Score (Accuracy)
+        - Measures model performance
+        - 1 = Perfect model
+        - 0 = Worst model
 
-    # JS (DRAG + ESC + CLICK OUTSIDE)
-    st.markdown("""
-    <script>
-    const popup = window.parent.document.getElementById("popup");
-    const overlay = window.parent.document.getElementById("overlay");
+        **Formula:**
+        R² = 1 - (SS_res / SS_tot)
+        """)
 
-    // DRAG
-    let isDown = false, offsetX, offsetY;
+    st.markdown("---")
 
-    popup.onmousedown = function(e){
-        isDown = true;
-        offsetX = e.clientX - popup.offsetLeft;
-        offsetY = e.clientY - popup.offsetTop;
-    };
+    # ---------- 🏆 BEST MODEL ----------
+    best_model = plot_df.loc[plot_df["R2_float"].idxmax()]
+    styled_subheader("🎯 Model Performance (All Assets)")
+    # ---------- ANIMATED LINE CHART ----------
+    x_vals = plot_df["Model"].tolist()
+    y_vals = plot_df["R2_float"].tolist()
 
-    document.onmouseup = () => isDown = false;
+    placeholder = st.empty()
+    
+    for i in range(1, len(x_vals) + 1):
 
-    document.onmousemove = function(e){
-        if(!isDown) return;
-        popup.style.left = (e.clientX - offsetX) + "px";
-        popup.style.top = (e.clientY - offsetY) + "px";
-        popup.style.transform = "none";
-    };
+        fig = go.Figure()
 
-    // CLICK OUTSIDE CLOSE
-    overlay.onclick = function(){
-        window.parent.postMessage({type:"streamlit:setComponentValue", value:"close"}, "*");
-    };
+        fig.add_trace(go.Scatter(
+            x=x_vals[:i],
+            y=y_vals[:i],
+            mode='lines+markers',
 
-    // ESC CLOSE
-    document.addEventListener("keydown", function(e){
-        if(e.key === "Escape"){
-            window.parent.postMessage({type:"streamlit:setComponentValue", value:"close"}, "*");
-        }
-    });
-    </script>
-    """, unsafe_allow_html=True)
+            marker=dict(
+                symbol='circle',
+                size=12,
+                color='#00a600'
+            ),
 
+            line=dict(
+                color='#00a600',
+                width=3
+            ),
 
-def premium_calculator(asset, latest):
+            hovertemplate="<b>%{x}</b><br>R²: %{y:.4f}<extra></extra>"
+        ))
+        
+        fig.update_layout(
+            xaxis=dict(title="Models"),
+            yaxis=dict(title="R² Score"),
+            paper_bgcolor="#0E1117",
+            plot_bgcolor="#0E1117",
+            font=dict(color="white"),
+            margin=dict(l=0, r=0, t=40, b=0)
+        )
 
-    price_map = {
-        "Gold": latest["Gold_24K_1g"],
-        "Silver": latest["Silver_1g"],
-        "Platinum": latest["Platinum_1g"],
-        "Palladium": latest["Palladium_1g"],
-        "Copper": latest["Copper_1g"]
-    }
+        placeholder.plotly_chart(fig, use_container_width=True)
+        time.sleep(0.15)
 
-    prefix = f"popup_{asset}"
-
-    if f"{prefix}_mode" not in st.session_state:
-        st.session_state[f"{prefix}_mode"] = "amount"
-
-    mode = st.session_state[f"{prefix}_mode"]
-
-    # -------- GLOW SLIDER CSS --------
-    st.markdown("""
-    <style>
-    .stSlider > div > div {
-        background: linear-gradient(90deg,#ff0000,#ff4d4d);
-        box-shadow: 0 0 10px red;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-
-    c1, c2 = st.columns(2)
-
-    if c1.button("💎 Weight", key=f"{prefix}_w"):
-        st.session_state[f"{prefix}_mode"] = "weight"
-
-    if c2.button("💰 Amount", key=f"{prefix}_a"):
-        st.session_state[f"{prefix}_mode"] = "amount"
-
-    mode = st.session_state[f"{prefix}_mode"]
-
-    left, right = st.columns([1,1.2])
-
-    with left:
-
-        if mode == "amount":
-            amount = st.slider("Amount (₹)", 0, 1000000, 10000, key=f"{prefix}_amt")
-            making = st.slider("Making (%)", 0, 50, 10, key=f"{prefix}_m")
-            gst = st.checkbox("GST", True, key=f"{prefix}_g")
-
-            price = price_map[asset]
-
-            base = amount / (1 + making/100)
-            weight = base / price
-
-        else:
-            qty = st.slider("Weight (g)", 1, 1000, 10, key=f"{prefix}_qty")
-            making = st.slider("Making (%)", 0, 50, 10, key=f"{prefix}_m2")
-            gst = st.checkbox("GST", True, key=f"{prefix}_g2")
-
-            price = price_map[asset]
-
-            base = qty * price
-            weight = qty
-
-        making_amt = base * (making/100)
-        subtotal = base + making_amt
-        gst_amt = subtotal * 0.03 if gst else 0
-        total = subtotal + gst_amt
-
-    with right:
-
-        # 🔥 SMOOTH NUMBER ANIMATION
-        st.markdown(f"""
-        <div style="
-            background:linear-gradient(135deg,#7f1d1d,#dc2626);
-            padding:30px;
-            border-radius:20px;
-            text-align:center;
-            color:white;
-            box-shadow:0 0 40px rgba(255,0,0,0.4);
-        ">
-            <h3>{asset}</h3>
-
-            <h1 id="counter" style="font-size:40px;">
-            {"{:.3f}".format(weight) if mode=='amount' else "{:,.0f}".format(total)}
-            </h1>
-
-            <p>Current ₹ {price:.0f}/g</p>
-        </div>
-
-        <script>
-        const el = window.parent.document.getElementById("counter");
-        if(el){{
-            let val = parseFloat(el.innerText.replace(/,/g,''));
-            let start = val * 0.9;
-            let i = start;
-
-            const step = (val - start)/20;
-
-            const anim = setInterval(()=>{{
-                i += step;
-                el.innerText = i.toFixed(2);
-                if(i >= val) clearInterval(anim);
-            }},20);
-        }}
-        </script>
-        """, unsafe_allow_html=True)
-
-with st.sidebar:
-    st.markdown("### 🧮 Calculator")
-
-    if st.button("Gold"):
-        st.session_state.popup = "Gold"
-    if st.button("Silver"):
-        st.session_state.popup = "Silver"
-    if st.button("Platinum"):
-        st.session_state.popup = "Platinum"
-    if st.button("Palladium"):
-        st.session_state.popup = "Palladium"
-    if st.button("Copper"):
-        st.session_state.popup = "Copper"
-
-if st.session_state.popup:
-    show_popup(st.session_state.popup, latest)
 #  FOOTER
 st.markdown("---")
 st.caption("© 2026 • Developed by Daksh Vasani | Advanced Analytics • Machine Learning • Financial Insights")

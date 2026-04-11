@@ -493,7 +493,9 @@ def show_popup(asset, latest):
     premium_calculator(asset, latest)
 
 
-# ================= MAIN =================
+# ================= MAIN ================
+import time
+import streamlit as st
 
 def premium_calculator(asset, latest):
 
@@ -536,9 +538,12 @@ def premium_calculator(asset, latest):
             st.markdown("### Gold Purity")
             p1, p2, p3 = st.columns(3)
 
-            if p1.button("24K"): st.session_state[f"{prefix}_purity"] = "24K"
-            if p2.button("22K"): st.session_state[f"{prefix}_purity"] = "22K"
-            if p3.button("18K"): st.session_state[f"{prefix}_purity"] = "18K"
+            if p1.button("24K"):
+                st.session_state[f"{prefix}_purity"] = "24K"
+            if p2.button("22K"):
+                st.session_state[f"{prefix}_purity"] = "22K"
+            if p3.button("18K"):
+                st.session_state[f"{prefix}_purity"] = "18K"
 
         purity = st.session_state[f"{prefix}_purity"]
 
@@ -559,15 +564,14 @@ def premium_calculator(asset, latest):
             "KG": 1000
         }
 
-        # ================= MODE: WEIGHT =================
+        # ================= WEIGHT =================
         if mode == "weight":
 
-            q1, q2 = st.columns([3, 1])
+            q1, q2 = st.columns([3,1])
 
-            # ✅ unit define first
             with q2:
                 unit = st.selectbox(
-                    "Unit",
+                    "",
                     ["Gram", "Sovereign / Pavan", "Tola", "KG"],
                     key=f"{prefix}_unit"
                 )
@@ -575,19 +579,14 @@ def premium_calculator(asset, latest):
             multiplier = unit_map[unit]
             max_val = 1000 if unit == "Gram" else 100
 
-            # ---------- STATE ----------
-            if f"{prefix}_input" not in st.session_state:
-                st.session_state[f"{prefix}_input"] = st.session_state[f"{prefix}_val"]
+            # STATE
+            st.session_state.setdefault(f"{prefix}_input", st.session_state[f"{prefix}_val"])
+            st.session_state.setdefault(f"{prefix}_slider", st.session_state[f"{prefix}_val"])
 
-            if f"{prefix}_slider" not in st.session_state:
-                st.session_state[f"{prefix}_slider"] = st.session_state[f"{prefix}_val"]
-
-            # ---------- LIMIT ----------
+            # LIMIT FIX
             st.session_state[f"{prefix}_val"] = min(st.session_state[f"{prefix}_val"], max_val)
-            st.session_state[f"{prefix}_input"] = min(st.session_state[f"{prefix}_input"], max_val)
-            st.session_state[f"{prefix}_slider"] = min(st.session_state[f"{prefix}_slider"], max_val)
 
-            # ---------- SYNC ----------
+            # SYNC
             if st.session_state[f"{prefix}_input"] != st.session_state[f"{prefix}_val"]:
                 st.session_state[f"{prefix}_val"] = st.session_state[f"{prefix}_input"]
             elif st.session_state[f"{prefix}_slider"] != st.session_state[f"{prefix}_val"]:
@@ -596,7 +595,6 @@ def premium_calculator(asset, latest):
             st.session_state[f"{prefix}_input"] = st.session_state[f"{prefix}_val"]
             st.session_state[f"{prefix}_slider"] = st.session_state[f"{prefix}_val"]
 
-            # ---------- UI ----------
             with q1:
                 st.number_input("Quantity", 1, max_val, key=f"{prefix}_input")
 
@@ -605,19 +603,16 @@ def premium_calculator(asset, latest):
             qty = st.session_state[f"{prefix}_val"]
             qty_grams = qty * multiplier
 
-            # ✅ FIX: add missing calculations
             making = st.slider("Making Charge (%)", 0, 50, 10)
             gst = st.checkbox("Include GST (3%)", True)
 
             base = qty_grams * price
 
-        # ================= MODE: AMOUNT =================
+        # ================= AMOUNT =================
         else:
 
-            if f"{prefix}_amt_input" not in st.session_state:
-                st.session_state[f"{prefix}_amt_input"] = st.session_state[f"{prefix}_val_amt"]
-            if f"{prefix}_amt_slider" not in st.session_state:
-                st.session_state[f"{prefix}_amt_slider"] = st.session_state[f"{prefix}_val_amt"]
+            st.session_state.setdefault(f"{prefix}_amt_input", st.session_state[f"{prefix}_val_amt"])
+            st.session_state.setdefault(f"{prefix}_amt_slider", st.session_state[f"{prefix}_val_amt"])
 
             if st.session_state[f"{prefix}_amt_input"] != st.session_state[f"{prefix}_val_amt"]:
                 st.session_state[f"{prefix}_val_amt"] = st.session_state[f"{prefix}_amt_input"]
@@ -632,23 +627,18 @@ def premium_calculator(asset, latest):
 
             amount = st.session_state[f"{prefix}_val_amt"]
             original_amount = amount
+
             making = st.slider("Making Charge (%)", 0, 50, 10)
             gst = st.checkbox("Include GST (3%)", True)
-            
+
             if amount <= 0:
                 base = 0
-                qty = 0
+                qty_grams = 0
             else:
                 base = amount / (1 + making/100)
-                qty = base / price if price > 0 else 0
+                qty_grams = base / price
 
-            if making > 0:
-                base = amount / (1 + making/100)
-            else:
-                base = amount
-            qty_grams = qty
-
-        # ---------- FINAL CALC ----------
+        # FINAL
         making_amt = base * (making/100)
         subtotal = base + making_amt
         gst_amt = subtotal * 0.03 if gst else 0
@@ -679,6 +669,22 @@ def premium_calculator(asset, latest):
             """, unsafe_allow_html=True)
 
             time.sleep(0.008)
+
+        # RATE CARD (NEW)
+        if asset == "Gold":
+            rate_label = f"{purity} Current Rate"
+        else:
+            rate_label = f"{asset} Current Rate"
+
+        st.markdown(f"""
+            <div style="background:#16a34a;padding:14px 18px;border-radius:12px;color:white;margin-top:12px;">
+                <div style="font-size:14px;opacity:0.9;margin:0;">
+                    <h4 style="margin:0; padding:0;">{rate_label}</h4>
+                </div>
+                 <div style="font-size:18px;font-weight:700;margin-top:2px;">
+                    ₹{int(price):,}/gram
+                </div>
+            </div>""", unsafe_allow_html=True)
 
         # ---------- BREAKDOWN ----------
         st.markdown("### Calculation Breakdown")

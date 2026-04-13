@@ -616,21 +616,39 @@ def show_section(asset):
 
     else:
         with colB:
-            selected_weight = st.selectbox(
-            "Select Volume",
-            ["1 Barrel", "10 Barrel", "100 Barrel", "1000 Barrel"],
-            index=0,
-            key=f"{asset}_barrel"
-            )
 
-        barrel_map = {
-            "1 Barrel": 1,
-            "10 Barrel": 10,
-            "100 Barrel": 100,
-            "1000 Barrel": 1000
-        }
+            if asset == "Natural_Gas":
+                selected_weight = st.selectbox(
+                    "Select Volume",
+                    ["1 Unit", "10 Unit", "100 Unit", "1000 Unit"], 
+                    index=0,
+                    key=f"{asset}_barrel"
+                )
+
+                barrel_map = {
+                    "1 Unit": 1,
+                    "10 Unit": 10,
+                    "100 Unit": 100,
+                    "1000 Unit": 1000
+                }
+
+            else:
+                selected_weight = st.selectbox(
+                    "Select Volume",
+                    ["1 Barrel", "10 Barrel", "100 Barrel", "1000 Barrel"],
+                    index=0,
+                    key=f"{asset}_barrel"
+                )
+
+                barrel_map = {
+                    "1 Barrel": 1,
+                    "10 Barrel": 10,
+                    "100 Barrel": 100,
+                    "1000 Barrel": 1000
+                }
 
         multiplier = barrel_map[selected_weight]
+
         if asset == "Natural_Gas":
             base_col = "Natural_Gas_INR"
         else:

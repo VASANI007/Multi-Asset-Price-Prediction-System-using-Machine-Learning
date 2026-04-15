@@ -8,217 +8,186 @@
 # 💹 Financial Market Intelligence  
 ### Multi-Asset Price Prediction System using Machine Learning
 
-An **advanced end-to-end Machine Learning + Financial Analytics system** that predicts next-day prices of multiple financial assets including:
-
-- 🪙 Precious Metals (Gold, Silver, Platinum, Palladium)  
-- 🛢️ Energy (Crude Oil, Brent Oil, Natural Gas)  
-- 💱 Currency (USD, EUR, GBP, AED)  
+An **advanced end-to-end Machine Learning + Financial Analytics system** that predicts next-day prices of multiple financial assets.
 
 ---
 
 # 🚀 Key Highlights
 
 - 📡 Real-time data collection using Yahoo Finance API  
-- 🔄 Automated data pipeline (Fetch → Process → Train → Predict)  
-- 🧠 Multi-model ML system (separate model per asset)  
-- 🔮 Next-day price prediction for 10+ assets  
+- 🔄 Automated ML pipeline (Fetch → Process → Train → Predict)  
+- 🧠 Multi-model system (separate model per asset)  
+- 🔮 Next-day prediction for multiple assets  
 - 📊 Interactive Streamlit Dashboard  
-- 📁 Excel + PDF report generation  
-- ⚡ Auto-refresh + live market tracking  
+- 📁 Excel + PDF reports  
+- ⚡ Auto-refresh + live tracking  
+
+---
+
+# 🎯 Problem Statement
+
+Financial markets are:
+- Highly volatile 📉  
+- Hard to predict manually 🤯  
+- Time-consuming ⏳  
+
+👉 This project solves:
+- Manual analysis dependency  
+- Lack of prediction tools  
+- Poor decision-making support  
+
+---
+
+# 💡 Solution
+
+✔ Automated pipeline  
+✔ Machine Learning predictions  
+✔ Multi-asset analysis  
+✔ Interactive dashboard  
 
 ---
 
 # 🖼️ Dashboard Preview
 
 <p align="center">
-<img src="https://raw.githubusercontent.com/VASANI007/Multi-Asset-Price-Prediction-System-using-Machine-Learning/main/Financial%20Market%20Intelligence/images/main.png" width="45%"/>
-<img src="https://raw.githubusercontent.com/VASANI007/Multi-Asset-Price-Prediction-System-using-Machine-Learning/main/Financial%20Market%20Intelligence/images/graph.png" width="45%"/>
+<img src="https://raw.githubusercontent.com/VASANI007/Multi-Asset-Price-Prediction-System-using-Machine-Learning/main/Financial%20Market%20Intelligence/images/main.png" width="24%"/>
+<img src="https://raw.githubusercontent.com/VASANI007/Multi-Asset-Price-Prediction-System-using-Machine-Learning/main/Financial%20Market%20Intelligence/images/graph.png" width="24%"/>
+<img src="https://raw.githubusercontent.com/VASANI007/Multi-Asset-Price-Prediction-System-using-Machine-Learning/main/Financial%20Market%20Intelligence/images/cal.png" width="24%"/>
+<img src="https://raw.githubusercontent.com/VASANI007/Multi-Asset-Price-Prediction-System-using-Machine-Learning/main/Financial%20Market%20Intelligence/images/7day.png" width="24%"/>
 </p>
+
+### 🔍 What Each Image Shows
+
+- **main.png** → Main dashboard UI  
+- **graph.png** → Price trends  
+- **cal.png** → Calculator  
+- **7day.png** → Prediction view  
+
+---
+
+# 📊 Analysis (Notebook)
 
 <p align="center">
-<img src="https://raw.githubusercontent.com/VASANI007/Multi-Asset-Price-Prediction-System-using-Machine-Learning/main/Financial%20Market%20Intelligence/images/cal.png" width="45%"/>
-<img src="https://raw.githubusercontent.com/VASANI007/Multi-Asset-Price-Prediction-System-using-Machine-Learning/main/Financial%20Market%20Intelligence/images/7day.png" width="45%"/>
+<img src="https://raw.githubusercontent.com/VASANI007/Multi-Asset-Price-Prediction-System-using-Machine-Learning/main/Financial%20Market%20Intelligence/images/all_charts_1920x1080.png" width="85%"/>
 </p>
 
 ---
 
-# 📊 Analysis & Insights (Notebook)
+# 🧠 How It Works (Deep Explanation)
 
-<p align="center">
-<img src="https://raw.githubusercontent.com/VASANI007/Multi-Asset-Price-Prediction-System-using-Machine-Learning/main/Financial%20Market%20Intelligence/images/all_charts_1920x1080.png" width="80%"/>
-</p>
-
----
-
-# 🧠 Project Understanding (From Report & PPT)
-
-According to your project report :contentReference[oaicite:0]{index=0}:
-
-### 🎯 Objective
-- Predict next-day asset prices using ML  
-- Reduce financial risk  
-- Provide data-driven investment insights  
-
-### ⚠️ Problem Solved
-- Market volatility  
-- Manual analysis dependency  
-- Lack of prediction systems  
-
-### 💡 Solution
-- Automated ML pipeline  
-- Feature engineering  
-- Interactive dashboard  
-
----
-
-# 🧠 How It Works (Pipeline Explained)
-
-Based on your actual code :contentReference[oaicite:1]{index=1}:
-
-### 🔹 Step 1: Data Collection
+## 🔹 Step 1: Data Collection
 - Uses `yfinance` API  
-- Fetches metals, energy, currency data :contentReference[oaicite:2]{index=2}  
+- Collects:
+  - Gold, Silver  
+  - Oil prices  
+  - Currency exchange  
 
-### 🔹 Step 2: Data Preprocessing
-- Merge multiple datasets  
+---
+
+## 🔹 Step 2: Data Preprocessing
+- Merge datasets  
 - Handle missing values  
 - Convert USD → INR  
-- Feature creation :contentReference[oaicite:3]{index=3}  
+- Clean data  
 
-### 🔹 Step 3: Feature Engineering
-- Lag Features → Lag_1, Lag_2, Lag_3  
-- Moving Averages → MA_3, MA_7, MA_30  
-- Currency impact → USD_INR, USD_Change  
+---
 
-### 🔹 Step 4: Model Training
+## 🔹 Step 3: Feature Engineering
+
+Features created:
+
+- Lag Features → Lag_1, Lag_2  
+- Moving Averages → MA_3, MA_7  
+- Currency effect → USD_INR  
+
+👉 This step improves accuracy significantly  
+
+---
+
+## 🔹 Step 4: Model Training
+
 - Algorithm: **Ridge Regression**
-- TimeSeriesSplit validation  
-- Separate model per asset  
+- Why:
+  - Stable  
+  - Handles multicollinearity  
 
-### 🔹 Step 5: Prediction
-- Predict next-day prices  
-- Multi-asset prediction system :contentReference[oaicite:4]{index=4}  
+- Validation:
+  - TimeSeriesSplit  
 
-### 🔹 Step 6: Visualization
-- Streamlit dashboard  
-- Live charts + predictions :contentReference[oaicite:5]{index=5}  
+---
+
+## 🔹 Step 5: Prediction
+
+- Predict next-day price  
+- Uses trained models  
+- Works for multiple assets  
+
+---
+
+## 🔹 Step 6: Visualization
+
+- Built using Streamlit  
+- Shows:
+  - Charts  
+  - Predictions  
+  - Insights  
 
 ---
 
 # 📊 Model Performance
 
-From training logic:
-
-- ✅ Time Series Cross Validation used  
-- ✅ MAE, RMSE, R² calculated :contentReference[oaicite:6]{index=6}  
-
-### Typical Performance:
-
-| Metric | Range |
+| Metric | Value |
 |-------|------|
-| MAE | Low (stable predictions) |
-| RMSE | Controlled error |
-| R² Score | ~0.95 – 0.99 |
+| MAE | Low |
+| RMSE | Stable |
+| R² Score | 0.95 – 0.99 |
 
-👉 Highly stable for financial time-series prediction
+👉 High accuracy for financial prediction  
 
 ---
 
-# 🏗️ Project Architecture
+# 🏗️ Architecture
 
-
-Data Fetch → Preprocessing → Feature Engineering →
-Model Training → Prediction → Dashboard
-
+Data Fetch → Preprocess → Feature Engineering → Train → Predict → Dashboard  
 
 ---
 
 # 📂 Project Structure
 
-
+```
 Financial Market Intelligence/
 
 ├── app/
-│ └── app.py # Streamlit Dashboard UI
+│   └── app.py
 │
 ├── data/
-│ ├── raw/ # Raw API data
-│ └── processed/
-│ └── final_data.csv # Final ML dataset
+│   ├── raw/ # all data.csv file
+│   └── processed/ #final_data.csv
 │
-├── models/ # All trained models (.pkl)
+├── models/ # all train models.pkl
 │
 ├── notebooks/
-│ └── analysis.ipynb # EDA + Visualization
+│   └── analysis.ipynb
 │
 ├── src/
-│ ├── data/
-│ │ └── fetch_data.py # Data collection
-│ │
-│ ├── processing/
-│ │ └── preprocess.py # Data cleaning + features
-│ │
-│ ├── models/
-│ │ ├── train_gold_model.py
-│ │ ├── train_silver_model.py
-│ │ ├── train_usd_model.py
-│ │ ├── train_copper_model.py
-│ │ ├── train_crude_oil_model.py
-│ │ ├── train_brent_oil_model.py
-│ │ ├── train_eur_model.py
-│ │ ├── train_gbp_model.py
-│ │ └── predict.py
+│   ├── data/  # fetch_data.py
+│   ├── processing/ # preprocessing.py
+│   └── models/ # all train_model.py & predict,py
 │
-├── main.py # Full pipeline runner
+├── main.py
 └── requirements.txt
-
-
----
-
-# 📄 File Explanation (Detailed)
-
-### 🔹 main.py
-- Runs complete pipeline  
-- Calls fetch → preprocess → train → predict :contentReference[oaicite:7]{index=7}  
+```
 
 ---
 
-### 🔹 fetch_data.py
-- Fetches real-time financial data  
-- Uses Yahoo Finance API  
-- Handles missing/duplicate data :contentReference[oaicite:8]{index=8}  
+# 📄 File Explanation
 
----
-
-### 🔹 preprocess.py
-- Merges datasets  
-- Converts prices to INR  
-- Creates features (lag + moving avg) :contentReference[oaicite:9]{index=9}  
-
----
-
-### 🔹 train_* models
-- Each asset has its own model  
-- Uses Ridge Regression  
-- TimeSeriesSplit validation  
-
-Example:
-- USD Model :contentReference[oaicite:10]{index=10}  
-- Copper Model :contentReference[oaicite:11]{index=11}  
-- Oil Model :contentReference[oaicite:12]{index=12}  
-
----
-
-### 🔹 predict.py
-- Loads all models  
-- Generates predictions for all assets :contentReference[oaicite:13]{index=13}  
-
----
-
-### 🔹 app.py
-- Full UI dashboard  
-- Live data + predictions  
-- Charts + ticker + calculator :contentReference[oaicite:14]{index=14}  
+- **main.py** → runs full pipeline  
+- **fetch_data.py** → collects data  
+- **preprocess.py** → cleans data  
+- **train models** → trains ML models  
+- **predict.py** → generates predictions  
+- **app.py** → dashboard  
 
 ---
 
@@ -226,56 +195,63 @@ Example:
 
 ```bash
 pip install -r requirements.txt
+```
 
-Dependencies include:
-pandas, numpy, scikit-learn, streamlit, plotly, yfinance
+---
 
-▶️ Run Project
-🔹 Run Full Pipeline
+# ▶️ Run Project
+
+### Run Pipeline
+```bash
 python main.py
-🔹 Run Dashboard
+```
+
+### Run Dashboard
+```bash
 streamlit run app/app.py
-📊 Dashboard Features
-📈 Real-time price tracking
-📉 Daily change indicators (▲ ▼)
-💰 Multi-metal tracking (Gold, Silver, Platinum)
-💱 Currency tracking
-🛢️ Oil & energy tracking
-📊 Interactive charts
-📁 Excel report export
-📄 PDF report generation
-🔮 Prediction System
-Next-day prediction
-Multi-asset prediction
-Uses lag + moving average features
-Handles real market volatility
-📑 Academic Report & PPT
+```
 
-📘 Your project report explains:
+---
 
-System architecture
-Feature engineering
-ML model selection
-Business impact
+# 📊 Dashboard Features
 
-👉 Based on report :
+- 📈 Live charts  
+- 📉 Price indicators  
+- 💰 Multi-asset tracking  
+- 💱 Currency tracking  
+- 📊 Interactive UI  
+- 📁 Report export  
 
-Ridge Regression used for stability
-Focus on real-world financial decision support
-Integrated dashboard + prediction system
-🚀 Future Improvements
-Deep Learning (LSTM, GRU)
-Real-time streaming data
-Cloud deployment
-API integration
-Portfolio optimization system
-👨‍💻 Author
+---
 
-Daksh Vasani
-Machine Learning Engineer | Data Analyst
+# 🔮 Prediction System
 
-⭐ Support
+- Next-day prediction  
+- Multi-asset prediction  
+- Uses lag + moving average  
+
+---
+
+# 🚀 Future Improvements
+
+- LSTM / Deep Learning  
+- Cloud deployment  
+- Real-time streaming  
+- Portfolio optimization  
+
+---
+
+# 👨‍💻 Author
+
+Daksh Vasani  
+Data Science Student 
+
+---
+
+# ⭐ Support
 
 If you like this project, give it a ⭐ on GitHub!
 
-<p align="center"> <img src="https://capsule-render.vercel.app/api?type=waving&color=0:0f2027,100:2c5364&height=170&section=footer&text=Thanks%20for%20Visiting!&fontSize=28&fontColor=ffffff&animation=twinkling&fontAlignY=65"/> </p> ```
+<p align="center">
+<img src="https://capsule-render.vercel.app/api?type=waving&color=0:0f2027,100:2c5364&height=170&section=footer&text=Thanks%20for%20Visiting!&fontSize=28&fontColor=ffffff&animation=twinkling&fontAlignY=65"/>
+</p>

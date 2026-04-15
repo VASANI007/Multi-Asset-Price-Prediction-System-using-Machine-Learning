@@ -51,9 +51,9 @@ Financial markets are:
 
 <p align="center">
 <img src="https://raw.githubusercontent.com/VASANI007/Multi-Asset-Price-Prediction-System-using-Machine-Learning/main/Financial%20Market%20Intelligence/images/main.png" width="24%"/>
+<img src="https://raw.githubusercontent.com/VASANI007/Multi-Asset-Price-Prediction-System-using-Machine-Learning/main/Financial%20Market%20Intelligence/images/7day.png" width="24%"/>
 <img src="https://raw.githubusercontent.com/VASANI007/Multi-Asset-Price-Prediction-System-using-Machine-Learning/main/Financial%20Market%20Intelligence/images/graph.png" width="24%"/>
 <img src="https://raw.githubusercontent.com/VASANI007/Multi-Asset-Price-Prediction-System-using-Machine-Learning/main/Financial%20Market%20Intelligence/images/cal.png" width="24%"/>
-<img src="https://raw.githubusercontent.com/VASANI007/Multi-Asset-Price-Prediction-System-using-Machine-Learning/main/Financial%20Market%20Intelligence/images/7day.png" width="24%"/>
 </p>
 
 ### 🔍 What Each Image Shows

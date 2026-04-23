@@ -21,9 +21,124 @@ from openpyxl.styles import Font, Alignment, PatternFill, Border, Side # For sty
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table # For creating PDF reports
 from reportlab.lib import colors # For defining colors
 from reportlab.lib.styles import getSampleStyleSheet # For getting sample styles
+import socket # For checking internet connection
 
+def check_internet():
+    try:
+        socket.create_connection(("8.8.8.8", 53), timeout=3)
+        return True
+    except:
+        return False
 #  CONFIG
 st.set_page_config(page_title="Financial Market Intelligence", page_icon="💰", layout="wide")
+# INTERNET CHECK
+
+if st.query_params.get("restart"):
+    st.query_params.clear()
+    st.cache_data.clear()
+    st.cache_resource.clear()
+    st.rerun()
+
+if st.query_params.get("offline"):
+    st.query_params.clear()
+    st.session_state.offline_mode = True
+    st.rerun()
+
+# Internet check
+if not check_internet() and not st.session_state.get("offline_mode"):
+
+    st.markdown("""
+    <style>
+    .offline-overlay {
+        position: fixed;
+        top: 0; left: 0;
+        width: 100vw; height: 100vh;
+        background: rgba(0,0,0,0.92);
+        backdrop-filter: blur(6px);
+        z-index: 9998;
+    }
+
+    .offline-card {
+        position: fixed;
+        top: 50%; left: 50%;
+        transform: translate(-50%, -50%);
+        background: #1a1a1a;
+        padding: 45px 40px 35px 40px;
+        border-radius: 20px;
+        text-align: center;
+        color: white;
+        width: 420px;
+        box-shadow: 0 0 60px rgba(0,0,0,0.8);
+        z-index: 9999;
+    }
+
+    .offline-title {
+        font-size: 26px;
+        color: #ff4d4d;
+        font-weight: bold;
+        margin-bottom: 12px;
+    }
+
+    .offline-text {
+        color: #aaa;
+        font-size: 15px;
+        margin-bottom: 28px;
+    }
+
+    .btn-row {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+    }
+
+    .btn {
+        padding: 11px 22px;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 14px;
+        cursor: pointer;
+        text-decoration: none !important;
+        transition: background 0.2s, transform 0.2s;
+        display: inline-block;
+    }
+
+    .btn-restart {
+        background: #f2003c;
+        color: white !important;
+    }
+
+    .btn-restart:hover {
+        background: #ff1a1a;
+        transform: scale(1.05);
+    }
+
+    .btn-offline {
+        background: #444;
+        color: white !important;
+    }
+
+    .btn-offline:hover {
+        background: #555;
+        transform: scale(1.05);
+    }
+    </style>
+
+    <div class="offline-overlay"></div>
+
+    <div class="offline-card">
+        <div class="offline-title">⚠ Oops! Internet Not Connected</div>
+        <div class="offline-text">
+            Please check your internet connection or continue in offline mode.
+        </div>
+        <div class="btn-row">
+            <a href="?restart=1" class="btn btn-restart">🗘 Restart App</a>
+            <a href="?offline=1" class="btn btn-offline">⊘ Offline Mode</a>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.stop()
+
 #  STYLES Title
 st.markdown("""
 <h1 style='
@@ -38,7 +153,8 @@ Financial Market Intelligence
 Advanced Analytics for Precious Metals, Energy & Currency Markets
 </p>
 """, unsafe_allow_html=True)
-
+if st.session_state.get("offline_mode"):
+    st.warning("⚠ You are in Offline Mode. Data may be outdated. Please turn on internet and restart app.")
 # ADVANCED LOADING SCREEN
 loading_placeholder = st.empty()
 
@@ -211,11 +327,21 @@ yesterday_date = previous['Date'].date()
 #  USD DATA 
 @st.cache_data(ttl=300)
 def load_usd_full():
-    usd = yf.download("USDINR=X", period="1y")
-    if isinstance(usd.columns, pd.MultiIndex):
-        usd.columns = usd.columns.get_level_values(0)
-    usd.reset_index(inplace=True)
-    return usd
+    try:
+        usd = yf.download("USDINR=X", period="1y", progress=False)
+
+        if usd.empty:
+            return pd.DataFrame()
+
+        if isinstance(usd.columns, pd.MultiIndex):
+            usd.columns = usd.columns.get_level_values(0)
+
+        usd.reset_index(inplace=True)
+
+        return usd
+
+    except Exception:
+        return pd.DataFrame()
 
 
 usd = load_usd_full()
@@ -237,18 +363,36 @@ gas_change = latest['Natural_Gas_INR'] - previous['Natural_Gas_INR']
 
 
 #  USD LIVE 
+# SAFE USD HANDLING (FIXED)
+usd_price = 0
+usd_prev = 0
+
 try:
-    usd_live = usd.tail(2).dropna()
+    if usd is None or usd.empty:
+        raise ValueError("USD data empty")
 
-    if len(usd_live) < 2:
-        raise ValueError("Not enough data")
+    usd = usd.dropna()
 
-    usd_price = float(usd_live['Close'].iloc[-1])
-    usd_prev = float(usd_live['Close'].iloc[-2])
+    if len(usd) >= 2:
+        usd_price = float(usd['Close'].iloc[-1])
+        usd_prev = float(usd['Close'].iloc[-2])
 
-except:
-    usd_price = float(usd['Close'].iloc[-1])
-    usd_prev = float(usd['Close'].iloc[-2])
+    elif len(usd) == 1:
+        usd_price = float(usd['Close'].iloc[-1])
+        usd_prev = usd_price
+
+    else:
+        raise ValueError("No valid USD rows")
+
+except Exception as e:
+
+    # 🔥 fallback using your main dataset
+    if 'USD_INR' in df.columns and len(df) >= 2:
+        usd_price = float(df['USD_INR'].iloc[-1])
+        usd_prev = float(df['USD_INR'].iloc[-2])
+    else:
+        usd_price = 0
+        usd_prev = 0
 
 
 usd_change = usd_price - usd_prev
@@ -1581,66 +1725,39 @@ def premium_calculator(asset, latest):
 
     #  RIGHT 
     with right:
-
-        placeholder = st.empty()
+        rate_label = f"{purity} Current Rate" if asset == "Gold" else f"{asset} Current Rate"
+        container = st.empty()
 
         for i in range(26):
 
+            progress = i / 25
+
             if mode == "amount":
-                val = final_weight * (i/25)
+                val = final_weight * progress
                 text = f"{val:.3f} g"
                 title = f"{asset} Weight"
             else:
-                val = int(total * (i/25))
+                val = int(total * progress)
                 text = f"₹ {val:,}"
                 title = "Total Amount"
 
-            placeholder.markdown(f"""
-                <div style="background:#16a34a;padding:18px;border-radius:14px;color:white">
-                    <div style="font-size:25px;">{title}</div>
-                    <div style="font-size:45px;font-weight:800;">{text}</div>
-                </div>""", unsafe_allow_html=True)
+            base_val = base * progress
+            making_val = making_amt * progress
+            subtotal_val = subtotal * progress
+            gst_val = gst_amt * progress
+            total_val = total * progress
 
-            time.sleep(0.008)
-        #  CURRENT RATE CARD (GOODRETURNS STYLE) 
-        rate_label = f"{purity} Current Rate" if asset == "Gold" else f"{asset} Current Rate"
+            container.markdown(f"""
+            <!-- TOP CARD -->
+            <div style="background:#16a34a;padding:18px;border-radius:14px;color:white"><div style="font-size:25px;">{title}</div><div style="font-size:45px;font-weight:800;">{text}</div></div>
 
-        st.markdown(f"""
-        <div style="background:rgba(255,255,255,0.12);padding:14px 16px;border-radius:12px;color:white;margin-top:12px;">
-            <div style="font-size:14px;opacity:0.85;margin:0;line-height:1.2;">{rate_label}</div>
-            <div style="font-size:18px;font-weight:700;margin-top:4px;line-height:1.2;">₹{int(price):,}/gram</div>
-        </div>
-        """, unsafe_allow_html=True)
+            <!-- RATE CARD -->
+            <div style="background:rgba(255,255,255,0.12);padding:14px 16px;border-radius:12px;color:white;margin-top:12px;"><div style="font-size:14px;opacity:0.85;">{rate_label}</div><div style="font-size:18px;font-weight:700;">₹{int(price):,}/gram</div></div>
 
-        #  BREAKDOWN 
-        st.markdown("### Calculation Breakdown")
+            <!-- BREAKDOWN -->
+            <div style="margin-top:15px;"><h4 style="color:white;">Calculation Breakdown</h4><div style="display:flex;justify-content:space-between;padding:6px 0;"><span>Weight</span><b>{final_weight:.3f} g</b></div><div style="display:flex;justify-content:space-between;padding:6px 0;"><span>Base Value</span><b>₹ {int(base_val):,}</b></div><div style="display:flex;justify-content:space-between;padding:6px 0;"><span>Making Charges</span><b>₹ {int(making_val):,}</b></div><hr style="border-color:#444"><div style="display:flex;justify-content:space-between;padding:6px 0;"><span>Subtotal</span><b>₹ {int(subtotal_val):,}</b></div><div style="display:flex;justify-content:space-between;padding:6px 0;"><span>GST (3%)</span><b>₹ {int(gst_val):,}</b></div><div style="margin-top:15px;background:#15803d;padding:12px;border-radius:12px;color:white;font-weight:bold;display:flex;justify-content:space-between;"><span>Total Amount</span><span>₹ {int(total_val):,}</span></div></div>""", unsafe_allow_html=True)
 
-        def row(label, val, money=True):
-            txt = f"₹ {int(val):,}" if money else f"{val:.3f} g"
-            st.markdown(f"""
-            <div style="display:flex;justify-content:space-between;padding:6px 0;">
-                <span>{label}</span>
-                <b>{txt}</b>
-            </div>
-            """, unsafe_allow_html=True)
-
-        if mode == "amount":
-            row("Amount Entered", original_amount)
-        else:
-            row("Weight", final_weight, False)
-
-        row("Base Value", base)
-        row("Making Charges", making_amt)
-        st.markdown("<hr style='border-color:#444'>", unsafe_allow_html=True)
-        row("Subtotal", subtotal)
-        row("GST (3%)", gst_amt)
-
-        st.markdown(f"""
-        <div style="margin-top:15px;background:#15803d;padding:12px;border-radius:12px;color:white;font-weight:bold;display:flex;justify-content:space-between;">
-            <span>{"Final Weight" if mode=="amount" else "Total Amount"}</span>
-            <span>{"{:.3f} g".format(final_weight) if mode=="amount" else "₹ {:,}".format(int(total))}</span>
-        </div>
-        """, unsafe_allow_html=True)
+            time.sleep(0.005)
 #  SIDEBAR 
 with st.sidebar:
     st.markdown("""
@@ -1694,6 +1811,37 @@ with st.sidebar:
 
     if st.button("Copper"):
         st.session_state.popup = "Copper"
+    st.markdown("<div style='height:20px;'></div>", unsafe_allow_html=True) 
+    st.markdown("""
+        <h2 style='
+            color:white;
+            border-left:6px solid #00a600;
+            padding-left:12px;
+            font-weight:bold;'>🛠️ Settings</h2>
+        """, unsafe_allow_html=True)
+    st.markdown("<div style='height:20px;'></div>", unsafe_allow_html=True)
+
+    st.markdown("""
+        <style>
+        .btn-restart {
+            display:block;
+            text-align:center;
+            padding:12px;
+            background:#f2003c;
+            color:white !important;
+            border-radius:10px;
+            text-decoration:none !important;
+            font-weight:600;
+        }
+        .btn-restart:hover {
+            background: #ff1a1a;
+            transform: scale(1.05);
+            color: white !important;
+            text-decoration: none !important;
+        }
+        </style>
+        <a href="?restart=1" class="btn btn-restart">🗘 Restart App</a>
+        """, unsafe_allow_html=True)
 
 
 #  TRIGGER 

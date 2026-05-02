@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Financial Market Intelligence – KNIME Workflow Guide</title>
+<style>
+  :root {
+    --bg: #0d0f14;
+    --bg2: #141720;
+    --bg3: #1c2030;
+    --card: #1a1e2e;
+    --border: rgba(255,255,255,0.08);
+    --accent: #4FC3F7;
+    --gold: #FFD700;
+    --green: #00E676;
+    --red: #FF5252;
+    --text: #e8eaf0;
+    --muted: #8892a4;
+    --purple: #9C7BFF;
+    --orange: #FF9800;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; font-size: 15px; line-height: 1.7; }
+
+  .header {
+    background: linear-gradient(135deg, #0a0c14 0%, #141a2e 50%, #0d1320 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 40px 48px 32px;
+    position: relative; overflow: hidden;
+  }
+  .header::before {
+    content:''; position:absolute; top:-60px; right:-60px;
+    width:320px; height:320px;
+    background: radial-gradient(circle, rgba(79,195,247,0.08) 0%, transparent 70%);
+    border-radius:50%;
+  }
+  .header-badge {
+    display:inline-flex; align-items:center; gap:8px;
+    background: rgba(79,195,247,0.12); border:1px solid rgba(79,195,247,0.3);
+    color: var(--accent); font-size:12px; font-weight:600;
+    padding:5px 14px; border-radius:20px; letter-spacing:0.5px;
+    margin-bottom:16px; text-transform:uppercase;
+  }
+  .header h1 { font-size:32px; font-weight:700; letter-spacing:-0.5px; margin-bottom:8px; }
+  .header h1 span { color: var(--accent); }
+  .header p { color: var(--muted); font-size:15px; max-width:640px; }
+
+  .toc {
+    background: var(--bg2); border:1px solid var(--border);
+    margin:28px 48px; border-radius:12px; padding:24px 28px;
+  }
+  .toc h3 { color: var(--accent); font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:1px; margin-bottom:14px; }
+  .toc-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px 32px; }
+  .toc a { color: var(--muted); text-decoration:none; font-size:14px; display:flex; align-items:center; gap:8px; padding:4px 0; transition:color .2s; }
+  .toc a:hover { color: var(--accent); }
+  .toc a span { color: var(--accent); font-weight:700; font-size:12px; min-width:20px; }
+
+  .container { max-width:1100px; margin:0 auto; padding:0 48px 60px; }
+
+  .section { margin-bottom:48px; }
+  .section-title {
+    display:flex; align-items:center; gap:14px;
+    border-left:4px solid var(--accent);
+    padding-left:16px; margin-bottom:24px;
+  }
+  .section-num { color: var(--accent); font-size:13px; font-weight:800; min-width:28px; }
+  .section-title h2 { font-size:22px; font-weight:700; }
+
+  /* Workflow diagram */
+  .flow-diagram {
+    background: var(--bg2); border:1px solid var(--border);
+    border-radius:12px; padding:28px; overflow-x:auto;
+  }
+  .flow-row { display:flex; align-items:center; gap:0; flex-wrap:nowrap; margin-bottom:12px; }
+  .flow-node {
+    background: var(--bg3); border:1px solid var(--border);
+    border-radius:10px; padding:12px 18px; min-width:150px;
+    text-align:center; position:relative; flex-shrink:0;
+  }
+  .flow-node.accent { border-color: var(--accent); background:rgba(79,195,247,0.07); }
+  .flow-node.gold { border-color: var(--gold); background:rgba(255,215,0,0.06); }
+  .flow-node.green { border-color: var(--green); background:rgba(0,230,118,0.06); }
+  .flow-node.purple { border-color: var(--purple); background:rgba(156,123,255,0.07); }
+  .flow-node.orange { border-color: var(--orange); background:rgba(255,152,0,0.06); }
+  .flow-node .icon { font-size:20px; margin-bottom:4px; display:block; }
+  .flow-node .label { font-size:12px; font-weight:600; color: var(--text); }
+  .flow-node .sub { font-size:11px; color: var(--muted); margin-top:2px; }
+  .flow-arrow { color: var(--muted); font-size:22px; padding:0 6px; flex-shrink:0; align-self:center; }
+
+  /* Node cards */
+  .node-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(300px,1fr)); gap:16px; }
+  .node-card {
+    background: var(--card); border:1px solid var(--border);
+    border-radius:12px; padding:20px;
+  }
+  .node-card-header { display:flex; align-items:center; gap:12px; margin-bottom:12px; }
+  .node-icon {
+    width:40px; height:40px; border-radius:10px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:20px; flex-shrink:0;
+  }
+  .node-icon.blue { background:rgba(79,195,247,0.15); }
+  .node-icon.gold { background:rgba(255,215,0,0.12); }
+  .node-icon.green { background:rgba(0,230,118,0.12); }
+  .node-icon.purple { background:rgba(156,123,255,0.12); }
+  .node-icon.orange { background:rgba(255,152,0,0.12); }
+  .node-icon.red { background:rgba(255,82,82,0.12); }
+  .node-card h4 { font-size:14px; font-weight:700; }
+  .node-card p { font-size:13px; color: var(--muted); line-height:1.6; }
+  .node-tag {
+    display:inline-block; font-size:11px; font-weight:600;
+    padding:2px 10px; border-radius:12px; margin:8px 4px 0 0;
+  }
+  .tag-blue { background:rgba(79,195,247,0.15); color:var(--accent); }
+  .tag-gold { background:rgba(255,215,0,0.12); color:var(--gold); }
+  .tag-green { background:rgba(0,230,118,0.12); color:var(--green); }
+  .tag-purple { background:rgba(156,123,255,0.12); color:var(--purple); }
+  .tag-orange { background:rgba(255,152,0,0.12); color:var(--orange); }
+  .tag-red { background:rgba(255,82,82,0.12); color:var(--red); }
+
+  /* Steps */
+  .step-list { display:flex; flex-direction:column; gap:0; }
+  .step-item { display:flex; gap:0; }
+  .step-left { display:flex; flex-direction:column; align-items:center; padding-right:20px; }
+  .step-num {
+    width:36px; height:36px; border-radius:50%;
+    background: rgba(79,195,247,0.15); border:2px solid var(--accent);
+    display:flex; align-items:center; justify-content:center;
+    font-size:14px; font-weight:800; color:var(--accent); flex-shrink:0;
+  }
+  .step-line { flex:1; width:2px; background:rgba(79,195,247,0.2); margin:4px 0; min-height:20px; }
+  .step-right { padding-bottom:28px; padding-top:6px; flex:1; }
+  .step-right h4 { font-size:15px; font-weight:700; margin-bottom:6px; }
+  .step-right p { font-size:13px; color:var(--muted); }
+
+  /* Code block */
+  .code-block {
+    background:#0a0d14; border:1px solid var(--border);
+    border-radius:8px; padding:16px 20px; margin:12px 0;
+    font-family: 'Courier New', monospace; font-size:12px;
+    color:#a8d8ea; overflow-x:auto; line-height:1.8;
+  }
+  .code-block .kw { color:#9C7BFF; }
+  .code-block .str { color:#FFD700; }
+  .code-block .cm { color:#546878; }
+
+  /* Table */
+  .data-table { width:100%; border-collapse:collapse; font-size:13px; }
+  .data-table thead tr { background:rgba(79,195,247,0.1); }
+  .data-table th { padding:10px 16px; text-align:left; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--accent); border-bottom:1px solid var(--border); }
+  .data-table td { padding:10px 16px; border-bottom:1px solid rgba(255,255,255,0.04); color:var(--muted); }
+  .data-table td:first-child { color:var(--text); font-weight:500; }
+  .data-table tr:hover td { background:rgba(255,255,255,0.02); }
+  .badge { display:inline-block; padding:2px 10px; border-radius:10px; font-size:11px; font-weight:600; }
+  .badge-blue { background:rgba(79,195,247,0.15); color:var(--accent); }
+  .badge-green { background:rgba(0,230,118,0.12); color:var(--green); }
+  .badge-gold { background:rgba(255,215,0,0.12); color:var(--gold); }
+
+  /* Alert */
+  .alert {
+    border-left:4px solid; border-radius:0 10px 10px 0;
+    padding:14px 18px; margin:16px 0; font-size:13px;
+  }
+  .alert-blue { border-color:var(--accent); background:rgba(79,195,247,0.07); color:#b0d8f0; }
+  .alert-gold { border-color:var(--gold); background:rgba(255,215,0,0.07); color:#e8d080; }
+  .alert-green { border-color:var(--green); background:rgba(0,230,118,0.07); color:#80e0a8; }
+  .alert strong { font-weight:700; display:block; margin-bottom:4px; }
+
+  /* Subheader */
+  .sub-heading {
+    font-size:14px; font-weight:700; color:var(--accent);
+    text-transform:uppercase; letter-spacing:1px;
+    margin:24px 0 12px; padding-bottom:8px;
+    border-bottom:1px solid rgba(79,195,247,0.2);
+  }
+
+  .divider { height:1px; background:var(--border); margin:36px 0; }
+
+  .metric-row { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px; }
+  .metric-card { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:16px; text-align:center; }
+  .metric-card .val { font-size:22px; font-weight:800; margin-bottom:4px; }
+  .metric-card .lbl { font-size:12px; color:var(--muted); }
+
+  .two-col { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+
+  @media (max-width:768px) {
+    .header, .container { padding-left:20px; padding-right:20px; }
+    .toc { margin:20px; }
+    .toc-grid { grid-template-columns:1fr; }
+    .two-col, .metric-row { grid-template-columns:1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-badge">💰 KNIME Analytics Platform</div>
+  <h1>Financial Market <span>Intelligence</span></h1>
+  <p>Complete step-by-step KNIME workflow guide — Data Fetch se lekar ML Predictions tak ka poora pipeline</p>
+</div>
+
+<div class="toc">
+  <h3>📋 Table of Contents</h3>
+  <div class="toc-grid">
+    <a href="#overview"><span>01</span> Project Overview</a>
+    <a href="#setup"><span>02</span> KNIME Setup & Prerequisites</a>
+    <a href="#data-fetch"><span>03</span> Data Fetching Workflow</a>
+    <a href="#preprocessing"><span>04</span> Data Preprocessing</a>
+    <a href="#feature-eng"><span>05</span> Feature Engineering</a>
+    <a href="#modeling"><span>06</span> ML Model Training</a>
+    <a href="#prediction"><span>07</span> Prediction Pipeline</a>
+    <a href="#output"><span>08</span> Output & Reporting</a>
+  </div>
+</div>
+
+<div class="container">
+
+<!-- SECTION 1: OVERVIEW -->
+<div class="section" id="overview">
+  <div class="section-title">
+    <span class="section-num">01</span>
+    <h2>Project Overview</h2>
+  </div>
+
+  <div class="metric-row">
+    <div class="metric-card">
+      <div class="val" style="color:var(--gold)">17</div>
+      <div class="lbl">Assets Tracked</div>
+    </div>
+    <div class="metric-card">
+      <div class="val" style="color:var(--accent)">11</div>
+      <div class="lbl">ML Models</div>
+    </div>
+    <div class="metric-card">
+      <div class="val" style="color:var(--green)">42</div>
+      <div class="lbl">Output Columns</div>
+    </div>
+    <div class="metric-card">
+      <div class="val" style="color:var(--purple)">2015</div>
+      <div class="lbl">Data Start Year</div>
+    </div>
+  </div>
+
+  <p style="color:var(--muted); margin-bottom:16px;">
+    Yeh project 3 main categories ke financial assets track karta hai — <strong style="color:var(--gold)">Precious Metals</strong>, <strong style="color:var(--accent)">Energy</strong>, aur <strong style="color:var(--purple)">Currencies</strong> — aur Indian Rupee (INR) mein prices calculate karta hai duties ke saath.
+  </p>
+
+  <table class="data-table" style="border:1px solid var(--border); border-radius:10px; overflow:hidden; background:var(--card);">
+    <thead>
+      <tr><th>Category</th><th>Assets</th><th>Yahoo Finance Symbol</th><th>Unit</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>🥇 Precious Metals</td><td>Gold (24K/22K/18K)</td><td>GC=F</td><td>per gram (INR)</td></tr>
+      <tr><td>🥈 Precious Metals</td><td>Silver</td><td>SI=F</td><td>per gram (INR)</td></tr>
+      <tr><td>⚪ Precious Metals</td><td>Platinum, Palladium</td><td>PL=F, PA=F</td><td>per gram (INR)</td></tr>
+      <tr><td>🟤 Metals</td><td>Copper, Aluminum</td><td>HG=F, ALI=F</td><td>per gram (INR)</td></tr>
+      <tr><td>⛽ Energy</td><td>Crude Oil, Brent Oil</td><td>CL=F, BZ=F</td><td>per barrel (INR)</td></tr>
+      <tr><td>🔥 Energy</td><td>Natural Gas</td><td>NG=F</td><td>per unit (INR)</td></tr>
+      <tr><td>💱 Currency</td><td>USD, EUR, GBP / INR</td><td>USDINR=X, etc.</td><td>INR rate</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="divider"></div>
+
+<!-- SECTION 2: SETUP -->
+<div class="section" id="setup">
+  <div class="section-title">
+    <span class="section-num">02</span>
+    <h2>KNIME Setup & Prerequisites</h2>
+  </div>
+
+  <div class="alert alert-blue">
+    <strong>⚠️ Required Extensions</strong>
+    KNIME Analytics Platform mein yeh extensions install karein: KNIME Python Integration, KNIME Machine Learning Extension, KNIME Scripting (Python), KNIME File Handling Nodes
+  </div>
+
+  <div class="sub-heading">🐍 Python Environment Setup</div>
+
+  <div class="step-list">
+    <div class="step-item">
+      <div class="step-left"><div class="step-num">1</div><div class="step-line"></div></div>
+      <div class="step-right">
+        <h4>KNIME Python Integration Configure Karein</h4>
+        <p>File → Preferences → KNIME → Python aur apna Python path set karein (conda environment recommend hai)</p>
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-left"><div class="step-num">2</div><div class="step-line"></div></div>
+      <div class="step-right">
+        <h4>Required Libraries Install Karein</h4>
+        <div class="code-block">pip install yfinance pandas numpy scikit-learn joblib plotly openpyxl reportlab</div>
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-left"><div class="step-num">3</div><div class="step-line"></div></div>
+      <div class="step-right">
+        <h4>Project Folder Structure</h4>
+        <div class="code-block">Financial Market Intelligence/<br>
+├── data/<br>
+│   ├── raw/          <span class="cm"># Yahoo Finance se download CSVs</span><br>
+│   └── processed/    <span class="cm"># final_data.csv</span><br>
+├── models/           <span class="cm"># .pkl model files</span><br>
+├── src/<br>
+│   ├── data/fetch_data.py<br>
+│   ├── processing/preprocess.py<br>
+│   └── models/       <span class="cm"># training scripts</span><br>
+└── app/app.py        <span class="cm"># Streamlit dashboard</span></div>
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-left"><div class="step-num">4</div></div>
+      <div class="step-right">
+        <h4>KNIME Workflow Save Location</h4>
+        <p>KNIME Workspace mein ek new workflow banayein: "Financial_Market_Intelligence_Pipeline"</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- SECTION 3: DATA FETCHING -->
+<div class="section" id="data-fetch">
+  <div class="section-title">
+    <span class="section-num">03</span>
+    <h2>Data Fetching Workflow</h2>
+  </div>
+
+  <div class="sub-heading">🔄 Workflow Diagram — Data Fetch Pipeline</div>
+  <div class="flow-diagram">
+    <div style="font-size:12px;color:var(--muted);margin-bottom:16px;">KNIME Node Sequence →</div>
+    <div class="flow-row">
+      <div class="flow-node accent">
+        <span class="icon">▶</span>
+        <div class="label">Workflow Start</div>
+        <div class="sub">Trigger node</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node gold">
+        <span class="icon">🐍</span>
+        <div class="label">Python Script</div>
+        <div class="sub">fetch_data.py</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node">
+        <span class="icon">📁</span>
+        <div class="label">List Files</div>
+        <div class="sub">data/raw/*.csv</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node green">
+        <span class="icon">📊</span>
+        <div class="label">CSV Reader</div>
+        <div class="sub">Each asset file</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node purple">
+        <span class="icon">✅</span>
+        <div class="label">Data Validator</div>
+        <div class="sub">Empty check</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sub-heading" style="margin-top:24px;">📋 KNIME Nodes — Step by Step</div>
+
+  <div class="node-grid">
+    <div class="node-card">
+      <div class="node-card-header">
+        <div class="node-icon blue">▶</div>
+        <div><h4>Node 1: Python Script (Source)</h4></div>
+      </div>
+      <p>Yahoo Finance se saare 17 assets ka data fetch karta hai. fetch_data.py ka code yahan paste karein.</p>
+      <div class="code-block" style="margin-top:10px;">
+<span class="cm"># Python Script Node mein yeh paste karein</span><br>
+<span class="kw">import</span> yfinance <span class="kw">as</span> yf<br>
+<span class="kw">import</span> pandas <span class="kw">as</span> pd<br>
+<span class="kw">import</span> os<br><br>
+SYMBOLS = {<br>
+  <span class="str">"gold"</span>: <span class="str">"GC=F"</span>,<br>
+  <span class="str">"silver"</span>: <span class="str">"SI=F"</span>,<br>
+  <span class="str">"crude_oil"</span>: <span class="str">"CL=F"</span>,<br>
+  <span class="str">"usd_inr"</span>: <span class="str">"USDINR=X"</span>,<br>
+  <span class="cm">  # ... baaki symbols</span><br>
+}<br><br>
+output_table = pd.DataFrame()
+      </div>
+      <span class="node-tag tag-blue">Python Script</span>
+      <span class="node-tag tag-gold">Source</span>
+    </div>
+
+    <div class="node-card">
+      <div class="node-card-header">
+        <div class="node-icon gold">📂</div>
+        <div><h4>Node 2: List Files (Path Variable)</h4></div>
+      </div>
+      <p>data/raw/ folder mein saare CSV files list karta hai. Loop anchor node ke saath connect karein.</p>
+      <div style="margin-top:10px;">
+        <strong style="font-size:12px;color:var(--accent);">Settings:</strong>
+        <ul style="margin-top:6px;padding-left:16px;font-size:12px;color:var(--muted);">
+          <li>Location: <code style="color:var(--accent);">data/raw/</code></li>
+          <li>Filter: <code style="color:var(--accent);">*.csv</code></li>
+          <li>Recursive: OFF</li>
+        </ul>
+      </div>
+      <span class="node-tag tag-gold">List Files</span>
+      <span class="node-tag tag-blue">Node: IO → File Handling</span>
+    </div>
+
+    <div class="node-card">
+      <div class="node-card-header">
+        <div class="node-icon green">📊</div>
+        <div><h4>Node 3: CSV Reader</h4></div>
+      </div>
+      <p>Har CSV file ko read karta hai. Column types detect karega automatically.</p>
+      <div style="margin-top:10px;">
+        <strong style="font-size:12px;color:var(--accent);">Settings:</strong>
+        <ul style="margin-top:6px;padding-left:16px;font-size:12px;color:var(--muted);">
+          <li>File: Flow Variable se (path)</li>
+          <li>Has Column Header: ✅</li>
+          <li>Row Delimiter: Auto</li>
+          <li>Column: Date → String/Date type</li>
+        </ul>
+      </div>
+      <span class="node-tag tag-green">CSV Reader</span>
+      <span class="node-tag tag-blue">IO → Read</span>
+    </div>
+
+    <div class="node-card">
+      <div class="node-card-header">
+        <div class="node-icon purple">🔁</div>
+        <div><h4>Node 4: Chunk Loop Start</h4></div>
+      </div>
+      <p>Har asset ke liye loop chalata hai. Saare raw CSV files ko sequentially process karta hai.</p>
+      <span class="node-tag tag-purple">Loop Start</span>
+      <span class="node-tag tag-gold">Flow Control</span>
+    </div>
+
+    <div class="node-card">
+      <div class="node-card-header">
+        <div class="node-icon orange">✅</div>
+        <div><h4>Node 5: Row Filter</h4></div>
+      </div>
+      <p>Empty rows aur null values remove karta hai. Date column validation bhi karta hai.</p>
+      <div style="margin-top:10px;">
+        <strong style="font-size:12px;color:var(--accent);">Filter Rules:</strong>
+        <ul style="margin-top:6px;padding-left:16px;font-size:12px;color:var(--muted);">
+          <li>Date: Not missing</li>
+          <li>Close: Not missing</li>
+          <li>Close: &gt; 0</li>
+        </ul>
+      </div>
+      <span class="node-tag tag-orange">Row Filter</span>
+    </div>
+
+    <div class="node-card">
+      <div class="node-card-header">
+        <div class="node-icon blue">🔚</div>
+        <div><h4>Node 6: Loop End</h4></div>
+      </div>
+      <p>Saare assets ke filtered data ko ek table mein collect karta hai. "Collect rows" option enable karein.</p>
+      <span class="node-tag tag-blue">Loop End</span>
+      <span class="node-tag tag-purple">Concatenate rows</span>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- SECTION 4: PREPROCESSING -->
+<div class="section" id="preprocessing">
+  <div class="section-title">
+    <span class="section-num">04</span>
+    <h2>Data Preprocessing Workflow</h2>
+  </div>
+
+  <div class="alert alert-gold">
+    <strong>💡 Main Logic</strong>
+    preprocess.py wala logic yahan KNIME nodes mein implement hoga — Date merge, forward fill, duty calculation, INR conversion.
+  </div>
+
+  <div class="sub-heading">🔄 Preprocessing Node Sequence</div>
+  <div class="flow-diagram">
+    <div class="flow-row" style="flex-wrap:wrap; gap:8px;">
+      <div class="flow-node accent" style="min-width:130px;">
+        <span class="icon">📥</span>
+        <div class="label">final_data.csv</div>
+        <div class="sub">CSV Reader</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node gold" style="min-width:130px;">
+        <span class="icon">📅</span>
+        <div class="label">String to Date</div>
+        <div class="sub">Date column convert</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node green" style="min-width:130px;">
+        <span class="icon">↕</span>
+        <div class="label">Sorter</div>
+        <div class="sub">Sort by Date ASC</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node purple" style="min-width:130px;">
+        <span class="icon">🔢</span>
+        <div class="label">Math Formula</div>
+        <div class="sub">INR Calculations</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node orange" style="min-width:130px;">
+        <span class="icon">📤</span>
+        <div class="label">CSV Writer</div>
+        <div class="sub">Save output</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sub-heading" style="margin-top:24px;">🧮 Math Formula Nodes — INR Calculations</div>
+
+  <table class="data-table" style="border:1px solid var(--border); border-radius:10px; overflow:hidden; background:var(--card);">
+    <thead>
+      <tr><th>New Column</th><th>KNIME Formula</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="badge badge-gold">Gold_24K_1g</span></td>
+        <td><code style="color:var(--accent);font-size:12px;">($GOLD$ / 31.1035) * $USD_INR$ * 1.08</code></td>
+        <td>Gold 24K per gram INR (8% duty)</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-gold">Gold_22K_1g</span></td>
+        <td><code style="color:var(--accent);font-size:12px;">$Gold_24K_1g$ * (22.0/24.0)</code></td>
+        <td>Gold 22K per gram INR</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-gold">Gold_18K_1g</span></td>
+        <td><code style="color:var(--accent);font-size:12px;">$Gold_24K_1g$ * (18.0/24.0)</code></td>
+        <td>Gold 18K per gram INR</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-blue">Silver_1g</span></td>
+        <td><code style="color:var(--accent);font-size:12px;">($SILVER$ / 31.1035) * $USD_INR$ * 1.06</code></td>
+        <td>Silver per gram INR (6% duty)</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-blue">Platinum_1g</span></td>
+        <td><code style="color:var(--accent);font-size:12px;">($PLATINUM$ / 31.1035) * $USD_INR$ * 1.10</code></td>
+        <td>Platinum per gram INR (10% duty)</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-blue">Copper_1g</span></td>
+        <td><code style="color:var(--accent);font-size:12px;">($COPPER$ / 453.592) * $USD_INR$ * 1.04</code></td>
+        <td>Copper per gram INR (4% duty)</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-green">Crude_Oil_INR</span></td>
+        <td><code style="color:var(--accent);font-size:12px;">$CRUDE_OIL$ * $USD_INR$ * 1.03</code></td>
+        <td>Crude Oil per barrel INR (3% duty)</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-green">Brent_Oil_INR</span></td>
+        <td><code style="color:var(--accent);font-size:12px;">$BRENT_OIL$ * $USD_INR$ * 1.03</code></td>
+        <td>Brent Oil per barrel INR</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-green">Natural_Gas_INR</span></td>
+        <td><code style="color:var(--accent);font-size:12px;">$NATURAL_GAS$ * $USD_INR$ * 1.02</code></td>
+        <td>Natural Gas INR (2% duty)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="sub-heading" style="margin-top:24px;">📌 Missing Value Handler Node</div>
+  <div class="two-col">
+    <div class="node-card">
+      <h4 style="margin-bottom:8px;">Forward Fill (ffill)</h4>
+      <p>Date gaps ke liye previous day ka value use karta hai. Weekends/holidays ke liye zaruri hai.</p>
+      <div style="margin-top:10px; font-size:12px; color:var(--muted);">
+        Node: <strong style="color:var(--accent);">Missing Value</strong><br>
+        Method: <strong style="color:var(--green);">Previous Value</strong><br>
+        Apply to: All numeric columns
+      </div>
+    </div>
+    <div class="node-card">
+      <h4 style="margin-bottom:8px;">Date Gap Filler</h4>
+      <p>Daily resampling ke liye Python Script node use karein jo missing dates insert karta hai.</p>
+      <div class="code-block" style="margin-top:10px;">
+<span class="cm"># Missing Value Node ke baad</span><br>
+df = df.set_index(<span class="str">'Date'</span>)<br>
+df = df.resample(<span class="str">'D'</span>).ffill()<br>
+df = df.reset_index()
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- SECTION 5: FEATURE ENGINEERING -->
+<div class="section" id="feature-eng">
+  <div class="section-title">
+    <span class="section-num">05</span>
+    <h2>Feature Engineering</h2>
+  </div>
+
+  <div class="sub-heading">📐 New Features (Math Formula Nodes)</div>
+
+  <table class="data-table" style="border:1px solid var(--border); border-radius:10px; overflow:hidden; background:var(--card);">
+    <thead>
+      <tr><th>Feature</th><th>Formula / Node</th><th>Purpose</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Gold_Return</td>
+        <td><code style="font-size:12px;color:var(--accent);">Lag Column → Math: (curr - prev) / prev</code></td>
+        <td>Daily return % — model feature</td>
+      </tr>
+      <tr>
+        <td>Silver_Return</td>
+        <td><code style="font-size:12px;color:var(--accent);">Same logic as Gold_Return</code></td>
+        <td>Daily silver return</td>
+      </tr>
+      <tr>
+        <td>Gold_Volatility</td>
+        <td><code style="font-size:12px;color:var(--accent);">Moving Aggregation: STD, window=7</code></td>
+        <td>7-day rolling std dev</td>
+      </tr>
+      <tr>
+        <td>Gold_Silver_Ratio</td>
+        <td><code style="font-size:12px;color:var(--accent);">$Gold_24K_1g$ / $Silver_1g$</code></td>
+        <td>Market health indicator</td>
+      </tr>
+      <tr>
+        <td>Lag_1, Lag_2, Lag_3</td>
+        <td><code style="font-size:12px;color:var(--accent);">Lag Column Node: lag=1,2,3</code></td>
+        <td>Previous day values for ML</td>
+      </tr>
+      <tr>
+        <td>MA_7, MA_30</td>
+        <td><code style="font-size:12px;color:var(--accent);">Moving Aggregation: MEAN, window=7,30</code></td>
+        <td>Moving averages for ML</td>
+      </tr>
+      <tr>
+        <td>Gold_24K_10g/100g/1kg</td>
+        <td><code style="font-size:12px;color:var(--accent);">$Gold_24K_1g$ * 10 / 100 / 1000</code></td>
+        <td>Multiple weight variants</td>
+      </tr>
+      <tr>
+        <td>DayOfWeek</td>
+        <td><code style="font-size:12px;color:var(--accent);">Date&Time Field Extractor: dayOfWeek</code></td>
+        <td>Weekday pattern capture</td>
+      </tr>
+      <tr>
+        <td>USD_Change</td>
+        <td><code style="font-size:12px;color:var(--accent);">Lag + Math: pct_change on USD_INR</code></td>
+        <td>Currency movement signal</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="alert alert-green" style="margin-top:20px;">
+    <strong>✅ KNIME Nodes Used</strong>
+    Moving Aggregation (window functions) → Lag Column → Math Formula → Date&Time Field Extractor → Column Rename
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- SECTION 6: ML MODELING -->
+<div class="section" id="modeling">
+  <div class="section-title">
+    <span class="section-num">06</span>
+    <h2>ML Model Training Pipeline</h2>
+  </div>
+
+  <div class="sub-heading">🔄 Training Workflow — Har Asset ke liye</div>
+  <div class="flow-diagram">
+    <div class="flow-row" style="flex-wrap:wrap; gap:8px;">
+      <div class="flow-node accent" style="min-width:110px;">
+        <span class="icon">📊</span>
+        <div class="label">Feature Data</div>
+        <div class="sub">Preprocessed</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node gold" style="min-width:110px;">
+        <span class="icon">✂</span>
+        <div class="label">Column Filter</div>
+        <div class="sub">Select features</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node green" style="min-width:110px;">
+        <span class="icon">➗</span>
+        <div class="label">Partitioning</div>
+        <div class="sub">80% train/20% test</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node purple" style="min-width:110px;">
+        <span class="icon">🌲</span>
+        <div class="label">Random Forest</div>
+        <div class="sub">Regressor</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node orange" style="min-width:110px;">
+        <span class="icon">📈</span>
+        <div class="label">Predictor</div>
+        <div class="sub">Test set apply</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node accent" style="min-width:110px;">
+        <span class="icon">📉</span>
+        <div class="label">Numeric Scorer</div>
+        <div class="sub">MAE, RMSE, R²</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sub-heading" style="margin-top:24px;">🌲 Model Configuration — Har Asset</div>
+
+  <table class="data-table" style="border:1px solid var(--border); border-radius:10px; overflow:hidden; background:var(--card);">
+    <thead>
+      <tr><th>Asset</th><th>Input Features</th><th>Target</th><th>KNIME Model</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="badge badge-gold">Gold</span></td>
+        <td><code style="font-size:11px;color:var(--muted);">Lag_1,2,3, MA_7,30, USD_INR, USD_Change, Gold_22K_1g, Gold_18K_1g, DayOfWeek</code></td>
+        <td>Gold_24K_1g (next day)</td>
+        <td>Random Forest Regressor</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-blue">Silver</span></td>
+        <td><code style="font-size:11px;color:var(--muted);">Lag_1,2,3, MA_3,7, USD_INR, USD_Change</code></td>
+        <td>Silver_1g (next day)</td>
+        <td>Random Forest Regressor</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-blue">Platinum/Palladium</span></td>
+        <td><code style="font-size:11px;color:var(--muted);">Lag_1,2,3, MA_3,7, USD_INR, USD_Change</code></td>
+        <td>Metal_1g (next day)</td>
+        <td>Random Forest Regressor</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-blue">Copper</span></td>
+        <td><code style="font-size:11px;color:var(--muted);">Lag_1,2,3, MA_3,7, USD_INR, USD_Change</code></td>
+        <td>Copper_1g (next day)</td>
+        <td>Random Forest Regressor</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-green">USD/EUR/GBP</span></td>
+        <td><code style="font-size:11px;color:var(--muted);">Lag_1,2,3, MA_3,7</code></td>
+        <td>Currency_INR (next day)</td>
+        <td>Random Forest Regressor</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-green">Crude/Brent Oil</span></td>
+        <td><code style="font-size:11px;color:var(--muted);">Lag_1,2,3, MA_3,7, USD_INR, USD_Change</code></td>
+        <td>Oil_INR_per_barrel</td>
+        <td>Random Forest Regressor</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-green">Natural Gas</span></td>
+        <td><code style="font-size:11px;color:var(--muted);">Lag_1,2,3, MA_3,7, USD_INR, USD_Change</code></td>
+        <td>Natural_Gas_INR</td>
+        <td>Random Forest Regressor</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="sub-heading" style="margin-top:24px;">⚙️ Random Forest Node Settings (KNIME)</div>
+  <div class="two-col">
+    <div class="node-card">
+      <h4 style="margin-bottom:10px;">🌲 Random Forest Learner (Regression)</h4>
+      <ul style="font-size:13px;color:var(--muted);padding-left:16px;line-height:2;">
+        <li>Number of Trees: <strong style="color:var(--accent);">100</strong></li>
+        <li>Max Depth: <strong style="color:var(--accent);">None (unlimited)</strong></li>
+        <li>Min Node Size: <strong style="color:var(--accent);">2</strong></li>
+        <li>Random Seed: <strong style="color:var(--accent);">42</strong></li>
+        <li>Feature Selection: <strong style="color:var(--accent);">Auto (sqrt)</strong></li>
+      </ul>
+    </div>
+    <div class="node-card">
+      <h4 style="margin-bottom:10px;">📊 Numeric Scorer Node</h4>
+      <ul style="font-size:13px;color:var(--muted);padding-left:16px;line-height:2;">
+        <li>Reference Column: <strong style="color:var(--gold);">Actual (target)</strong></li>
+        <li>Prediction Column: <strong style="color:var(--green);">Prediction</strong></li>
+        <li>Output: <strong style="color:var(--accent);">MAE, MSE, RMSE, R²</strong></li>
+        <li>Adjusted R²: <strong style="color:var(--accent);">Enable</strong></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="sub-heading" style="margin-top:24px;">💾 Model Save — KNIME Model Writer</div>
+  <div class="node-card">
+    <div class="node-card-header">
+      <div class="node-icon purple">💾</div>
+      <div><h4>KNIME Model Writer Node</h4></div>
+    </div>
+    <p>Random Forest model ko save karta hai. Alag-alag asset ke liye alag filename use karein.</p>
+    <div class="code-block" style="margin-top:12px;">
+<span class="cm"># Alternatively Python Script Node se:</span><br>
+<span class="kw">import</span> joblib<br><br>
+<span class="cm"># Gold model save</span><br>
+joblib.dump(model, <span class="str">"models/gold_model.pkl"</span>)<br>
+joblib.dump(metrics_dict, <span class="str">"models/gold_metrics.pkl"</span>)
+    </div>
+    <span class="node-tag tag-purple">PMML Writer</span>
+    <span class="node-tag tag-blue">OR Python Joblib</span>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- SECTION 7: PREDICTION -->
+<div class="section" id="prediction">
+  <div class="section-title">
+    <span class="section-num">07</span>
+    <h2>Prediction Pipeline</h2>
+  </div>
+
+  <div class="alert alert-blue">
+    <strong>🎯 Prediction Logic</strong>
+    Har asset ke liye latest data ke basis par next day ki price predict hoti hai. 7-day rolling prediction ke liye iterative approach use hoti hai.
+  </div>
+
+  <div class="sub-heading">🔮 Next Day Prediction Workflow</div>
+  <div class="flow-diagram">
+    <div class="flow-row" style="flex-wrap:wrap; gap:8px;">
+      <div class="flow-node accent" style="min-width:120px;">
+        <span class="icon">📥</span>
+        <div class="label">Load Model</div>
+        <div class="sub">KNIME Model Reader</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node gold" style="min-width:120px;">
+        <span class="icon">📊</span>
+        <div class="label">Latest Data</div>
+        <div class="sub">Last 30 rows</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node green" style="min-width:120px;">
+        <span class="icon">🧮</span>
+        <div class="label">Feature Create</div>
+        <div class="sub">Lag + MA Calculate</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node purple" style="min-width:120px;">
+        <span class="icon">🎯</span>
+        <div class="label">RF Predictor</div>
+        <div class="sub">Apply Model</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node orange" style="min-width:120px;">
+        <span class="icon">📋</span>
+        <div class="label">Results Table</div>
+        <div class="sub">Next day price</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sub-heading" style="margin-top:24px;">🔄 7-Day Iterative Prediction (Python Script Node)</div>
+  <div class="code-block">
+<span class="cm"># Python Script Node — 7 Day Rolling Prediction</span><br><br>
+<span class="kw">import</span> joblib<br>
+<span class="kw">import</span> pandas <span class="kw">as</span> pd<br>
+<span class="kw">import</span> numpy <span class="kw">as</span> np<br>
+<span class="kw">from</span> datetime <span class="kw">import</span> timedelta<br><br>
+<span class="cm"># Input: input_table (from KNIME)</span><br>
+df = input_table.copy()<br>
+gold_model = joblib.load(<span class="str">"models/gold_model.pkl"</span>)<br><br>
+future_preds = []<br>
+future_dates = []<br><br>
+<span class="kw">for</span> i <span class="kw">in</span> range(7):<br>
+    lag1 = df[<span class="str">'Gold_24K_1g'</span>].iloc[-1]<br>
+    lag2 = df[<span class="str">'Gold_24K_1g'</span>].iloc[-2]<br>
+    lag3 = df[<span class="str">'Gold_24K_1g'</span>].iloc[-3]<br>
+    ma7  = df[<span class="str">'Gold_24K_1g'</span>].tail(7).mean()<br>
+    ma30 = df[<span class="str">'Gold_24K_1g'</span>].tail(30).mean()<br>
+    usd  = df[<span class="str">'USD_INR'</span>].iloc[-1]<br><br>
+    X = pd.DataFrame([[lag1, lag2, lag3, ma7, ma30, usd, <span class="str">0</span>,<br>
+                       lag1*(22/24), lag1*(18/24), 18/24/lag1, <span class="str">0</span>]],<br>
+        columns=[<span class="str">'Lag_1'</span>,<span class="str">'Lag_2'</span>,<span class="str">'Lag_3'</span>,<span class="str">'MA_7'</span>,<span class="str">'MA_30'</span>,<br>
+                 <span class="str">'USD_INR'</span>,<span class="str">'USD_Change'</span>,<span class="str">'Gold_22K_1g'</span>,<span class="str">'Gold_18K_1g'</span>,<br>
+                 <span class="str">'Gold_18K_Ratio'</span>,<span class="str">'DayOfWeek'</span>])<br><br>
+    pred = gold_model.predict(X)[0]<br>
+    future_preds.append(pred)<br>
+    next_date = df[<span class="str">'Date'</span>].iloc[-1] + timedelta(days=1)<br>
+    future_dates.append(next_date)<br><br>
+    new_row = df.iloc[-1].copy()<br>
+    new_row[<span class="str">'Date'</span>] = next_date<br>
+    new_row[<span class="str">'Gold_24K_1g'</span>] = pred<br>
+    df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=<span class="str">True</span>)<br><br>
+output_table = pd.DataFrame({<br>
+    <span class="str">'Date'</span>: future_dates,<br>
+    <span class="str">'Gold_24K_Predicted'</span>: future_preds<br>
+})
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- SECTION 8: OUTPUT -->
+<div class="section" id="output">
+  <div class="section-title">
+    <span class="section-num">08</span>
+    <h2>Output & Reporting</h2>
+  </div>
+
+  <div class="sub-heading">📤 Output Options KNIME mein</div>
+  <div class="node-grid">
+    <div class="node-card">
+      <div class="node-card-header">
+        <div class="node-icon green">📊</div>
+        <div><h4>Interactive Table View</h4></div>
+      </div>
+      <p>KNIME Table View node se current prices, changes, aur predictions ek table mein dekhen.</p>
+      <span class="node-tag tag-green">Table View</span>
+    </div>
+
+    <div class="node-card">
+      <div class="node-card-header">
+        <div class="node-icon blue">📈</div>
+        <div><h4>Line Plot Node</h4></div>
+      </div>
+      <p>Price trend chart ke liye — X: Date, Y: Gold_24K_1g. Multiple series add kar sakte hain.</p>
+      <span class="node-tag tag-blue">Line Plot</span>
+      <span class="node-tag tag-gold">Visualization</span>
+    </div>
+
+    <div class="node-card">
+      <div class="node-card-header">
+        <div class="node-icon gold">📥</div>
+        <div><h4>Excel Writer Node</h4></div>
+      </div>
+      <p>Final processed data Excel mein export karein. Multiple sheets ke liye alag-alag Column Filter use karein.</p>
+      <span class="node-tag tag-gold">XLS Writer</span>
+    </div>
+
+    <div class="node-card">
+      <div class="node-card-header">
+        <div class="node-icon purple">🔔</div>
+        <div><h4>Send Email Node</h4></div>
+      </div>
+      <p>Daily market summary email bhej sakte hain (KNIME Send Email node — SMTP configure karein).</p>
+      <span class="node-tag tag-purple">Send Email</span>
+    </div>
+
+    <div class="node-card">
+      <div class="node-card-header">
+        <div class="node-icon orange">📊</div>
+        <div><h4>Bar Chart — Model Performance</h4></div>
+      </div>
+      <p>Har model ka R² Score bar chart mein show karein. Numeric Scorer output connect karein.</p>
+      <span class="node-tag tag-orange">Bar Chart</span>
+      <span class="node-tag tag-blue">Visualization</span>
+    </div>
+
+    <div class="node-card">
+      <div class="node-card-header">
+        <div class="node-icon blue">⏰</div>
+        <div><h4>KNIME Scheduler (Auto Run)</h4></div>
+      </div>
+      <p>Daily automatic execution ke liye KNIME Scheduler use karein — har subah 9 AM market open se pehle run karein.</p>
+      <span class="node-tag tag-blue">Scheduler</span>
+      <span class="node-tag tag-green">Automation</span>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="sub-heading">📋 Complete Workflow Summary — Node Checklist</div>
+  <div style="background:var(--card); border:1px solid var(--border); border-radius:12px; padding:24px;">
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px 32px;">
+      <div style="font-size:13px; color:var(--muted); padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.05);">
+        <span style="color:var(--green); margin-right:8px;">✅</span><strong style="color:var(--text);">Python Script Node</strong> — Data Fetch (yfinance)
+      </div>
+      <div style="font-size:13px; color:var(--muted); padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.05);">
+        <span style="color:var(--green); margin-right:8px;">✅</span><strong style="color:var(--text);">CSV Reader</strong> — Raw data load karna
+      </div>
+      <div style="font-size:13px; color:var(--muted); padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.05);">
+        <span style="color:var(--green); margin-right:8px;">✅</span><strong style="color:var(--text);">String to Date/Time</strong> — Date column convert
+      </div>
+      <div style="font-size:13px; color:var(--muted); padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.05);">
+        <span style="color:var(--green); margin-right:8px;">✅</span><strong style="color:var(--text);">Sorter</strong> — Date ascending sort
+      </div>
+      <div style="font-size:13px; color:var(--muted); padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.05);">
+        <span style="color:var(--green); margin-right:8px;">✅</span><strong style="color:var(--text);">Missing Value</strong> — Forward fill
+      </div>
+      <div style="font-size:13px; color:var(--muted); padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.05);">
+        <span style="color:var(--green); margin-right:8px;">✅</span><strong style="color:var(--text);">Math Formula</strong> — INR price calculations
+      </div>
+      <div style="font-size:13px; color:var(--muted); padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.05);">
+        <span style="color:var(--green); margin-right:8px;">✅</span><strong style="color:var(--text);">Lag Column</strong> — Lag_1, Lag_2, Lag_3
+      </div>
+      <div style="font-size:13px; color:var(--muted); padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.05);">
+        <span style="color:var(--green); margin-right:8px;">✅</span><strong style="color:var(--text);">Moving Aggregation</strong> — MA_7, MA_30
+      </div>
+      <div style="font-size:13px; color:var(--muted); padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.05);">
+        <span style="color:var(--green); margin-right:8px;">✅</span><strong style="color:var(--text);">Date&Time Field Extractor</strong> — DayOfWeek
+      </div>
+      <div style="font-size:13px; color:var(--muted); padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.05);">
+        <span style="color:var(--green); margin-right:8px;">✅</span><strong style="color:var(--text);">Partitioning</strong> — 80/20 train-test split
+      </div>
+      <div style="font-size:13px; color:var(--muted); padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.05);">
+        <span style="color:var(--green); margin-right:8px;">✅</span><strong style="color:var(--text);">Random Forest Learner</strong> — 11 models train
+      </div>
+      <div style="font-size:13px; color:var(--muted); padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.05);">
+        <span style="color:var(--green); margin-right:8px;">✅</span><strong style="color:var(--text);">Random Forest Predictor</strong> — Test set apply
+      </div>
+      <div style="font-size:13px; color:var(--muted); padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.05);">
+        <span style="color:var(--green); margin-right:8px;">✅</span><strong style="color:var(--text);">Numeric Scorer</strong> — MAE, RMSE, R²
+      </div>
+      <div style="font-size:13px; color:var(--muted); padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.05);">
+        <span style="color:var(--green); margin-right:8px;">✅</span><strong style="color:var(--text);">PMML Writer</strong> — Model save karna
+      </div>
+      <div style="font-size:13px; color:var(--muted); padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.05);">
+        <span style="color:var(--green); margin-right:8px;">✅</span><strong style="color:var(--text);">Python Script Node</strong> — 7-day prediction loop
+      </div>
+      <div style="font-size:13px; color:var(--muted); padding:6px 0;">
+        <span style="color:var(--green); margin-right:8px;">✅</span><strong style="color:var(--text);">XLS Writer / Line Plot</strong> — Output & Visualization
+      </div>
+    </div>
+  </div>
+
+  <div class="alert alert-gold" style="margin-top:24px;">
+    <strong>💡 Pro Tip — MetaNodes Use Karein</strong>
+    Saare "Data Fetch" nodes ko ek MetaNode mein, "Preprocessing" ko alag MetaNode mein rakhen. Isse workflow clean aur maintainable rahega. Har asset ke liye Component Node bana sakte hain jo reusable hoga.
+  </div>
+</div>
+
+</div>
+
+<div style="background:var(--bg2); border-top:1px solid var(--border); padding:24px 48px; text-align:center; color:var(--muted); font-size:13px;">
+  Financial Market Intelligence — KNIME Workflow Guide &nbsp;|&nbsp; Gold, Silver, Metals, Energy & Currency Analytics
+</div>
+
+</body>
+</html>

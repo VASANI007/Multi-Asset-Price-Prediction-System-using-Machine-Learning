@@ -274,38 +274,38 @@ with st.spinner(" Fetching market data..."):
 # LOAD MODEL
 try:
     # CORE MODELS
-    gold_model = joblib.load("models/gold_model.pkl")
-    silver_model = joblib.load("models/silver_model.pkl")
-    usd_model = joblib.load("models/usd_model.pkl")
+    gold_model = joblib.load("Financial Market Intelligence/models/gold_model.pkl")
+    silver_model = joblib.load("Financial Market Intelligence/models/silver_model.pkl")
+    usd_model = joblib.load("Financial Market Intelligence/models/usd_model.pkl")
 
     # CURRENCY MODELS
-    eur_model = joblib.load("models/eur_model.pkl")
-    gbp_model = joblib.load("models/gbp_model.pkl")
+    eur_model = joblib.load("Financial Market Intelligence/models/eur_model.pkl")
+    gbp_model = joblib.load("Financial Market Intelligence/models/gbp_model.pkl")
 
     # METALS
-    platinum_model = joblib.load("models/platinum_model.pkl")
-    palladium_model = joblib.load("models/palladium_model.pkl")
-    copper_model = joblib.load("models/copper_model.pkl")
+    platinum_model = joblib.load("Financial Market Intelligence/models/platinum_model.pkl")
+    palladium_model = joblib.load("Financial Market Intelligence/models/palladium_model.pkl")
+    copper_model = joblib.load("Financial Market Intelligence/models/copper_model.pkl")
 
     # ENERGY
-    crude_model = joblib.load("models/crude_oil_model.pkl")
-    brent_model = joblib.load("models/brent_oil_model.pkl")
-    gas_model = joblib.load("models/natural_gas_model.pkl")
+    crude_model = joblib.load("Financial Market Intelligence/models/crude_oil_model.pkl")
+    brent_model = joblib.load("Financial Market Intelligence/models/brent_oil_model.pkl")
+    gas_model = joblib.load("Financial Market Intelligence/models/natural_gas_model.pkl")
 
     # METRICS
-    gold_metrics = joblib.load("models/gold_metrics.pkl")
-    silver_metrics = joblib.load("models/silver_metrics.pkl")
-    usd_metrics = joblib.load("models/usd_metrics.pkl")
-    eur_metrics = joblib.load("models/eur_metrics.pkl")
-    gbp_metrics = joblib.load("models/gbp_metrics.pkl")
+    gold_metrics = joblib.load("Financial Market Intelligence/models/gold_metrics.pkl")
+    silver_metrics = joblib.load("Financial Market Intelligence/models/silver_metrics.pkl")
+    usd_metrics = joblib.load("Financial Market Intelligence/models/usd_metrics.pkl")
+    eur_metrics = joblib.load("Financial Market Intelligence/models/eur_metrics.pkl")
+    gbp_metrics = joblib.load("Financial Market Intelligence/models/gbp_metrics.pkl")
 
-    platinum_metrics = joblib.load("models/platinum_metrics.pkl")
-    palladium_metrics = joblib.load("models/palladium_metrics.pkl")
-    copper_metrics = joblib.load("models/copper_metrics.pkl")
+    platinum_metrics = joblib.load("Financial Market Intelligence/models/platinum_metrics.pkl")
+    palladium_metrics = joblib.load("Financial Market Intelligence/models/palladium_metrics.pkl")
+    copper_metrics = joblib.load("Financial Market Intelligence/models/copper_metrics.pkl")
 
-    crude_metrics = joblib.load("models/crude_oil_metrics.pkl")
-    brent_metrics = joblib.load("models/brent_oil_metrics.pkl")
-    gas_metrics = joblib.load("models/natural_gas_metrics.pkl")
+    crude_metrics = joblib.load("Financial Market Intelligence/models/crude_oil_metrics.pkl")
+    brent_metrics = joblib.load("Financial Market Intelligence/models/brent_oil_metrics.pkl")
+    gas_metrics = joblib.load("Financial Market Intelligence/models/natural_gas_metrics.pkl")
 
 except Exception as e:
     st.error(f"Model loading failed: {e}")

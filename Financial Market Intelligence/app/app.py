@@ -1,4 +1,4 @@
-import os
+Import os
 import sys
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -11,6 +11,7 @@ import plotly.graph_objects as go # For creating interactive plots
 import time # For adding delays
 import streamlit as st # For creating the web application
 import yfinance as yf # For fetching financial data
+import plotly.graph_objects as go # For creating interactive plots
 from src.data.fetch_data import fetch_all # For fetching data from the database
 from src.processing.preprocess import preprocess # For preprocessing the data
 from io import BytesIO # For handling binary data
@@ -30,50 +31,8 @@ def check_internet():
         return False
 #  CONFIG
 st.set_page_config(page_title="Financial Market Intelligence", page_icon="💰", layout="wide")
-
-# 🔥 STRIKT TARGETED RESPONSIVE CSS OVERRIDES (Only fixing the requested 3 areas)
-st.markdown("""
-<style>
-/* TARGET 1: Overview Metric Cards Flex row management for Mobile screens */
-div[data-testid="stHorizontalBlock"]:has(div[style*="display:flex; flex-direction:column; gap:6px;"]) {
-    display: flex !important;
-    flex-direction: row !important;
-    flex-wrap: wrap !important;
-    gap: 10px !important;
-}
-div[data-testid="stHorizontalBlock"]:has(div[style*="display:flex; flex-direction:column; gap:6px;"]) > div {
-    flex: 1 1 calc(50% - 10px) !important;
-    min-width: 140px !important;
-}
-
-/* TARGET 2: Force Popup Calculator Mode & Purity Buttons strictly horizontal */
-div[data-testid="stHorizontalBlock"]:has(button[key*="popup_"]) {
-    display: flex !important;
-    flex-direction: row !important;
-    gap: 8px !important;
-    width: 100% !important;
-}
-div[data-testid="stHorizontalBlock"]:has(button[key*="popup_"]) > div {
-    flex: 1 !important;
-}
-
-/* TARGET 3: Force Price Trend Graph Range Buttons Inline Horizontal Row */
-div[data-testid="stHorizontalBlock"]:has(button[key*="_btn_"]) {
-    display: flex !important;
-    flex-direction: row !important;
-    flex-wrap: nowrap !important;
-    overflow-x: auto !important;
-    gap: 6px !important;
-    padding: 5px 0 !important;
-}
-div[data-testid="stHorizontalBlock"]:has(button[key*="_btn_"]) > div {
-    flex: 0 0 auto !important;
-    width: auto !important;
-}
-</style>
-""", unsafe_allow_html=True)
-
 # INTERNET CHECK
+
 if st.query_params.get("restart"):
     st.query_params.clear()
     st.cache_data.clear()
@@ -1296,6 +1255,7 @@ def show_popup(asset, latest):
     premium_calculator(asset, latest)
 
 
+
 def generate_pdf_report(asset, purity, price, qty_grams, base, making_amt, gst_amt, total):
 
     buffer = BytesIO()
@@ -1342,10 +1302,11 @@ def generate_pdf_report(asset, purity, price, qty_grams, base, making_amt, gst_a
     return buffer.getvalue()
 
 
+
 def generate_excel_report(asset, purity, price, qty_grams, base, making_amt, gst_amt, total, df):
 
     #  PREDICTION 
-    future_prices = []
+    future_dates, future_prices = [], []
     temp_df = df.copy()
     metal_key = asset if asset != "Gold" else f"Gold_{purity}"
 
@@ -1353,6 +1314,7 @@ def generate_excel_report(asset, purity, price, qty_grams, base, making_amt, gst
         pred = get_prediction(temp_df, metal_key)
         future_prices.append(int(pred))
         next_date = temp_df['Date'].iloc[-1] + timedelta(days=1)
+        future_dates.append(next_date.strftime("%d-%m-%Y"))
 
         new_row = temp_df.iloc[-1].copy()
         new_row['Date'] = next_date
@@ -1364,6 +1326,7 @@ def generate_excel_report(asset, purity, price, qty_grams, base, making_amt, gst
             new_row[col_map[asset]] = pred
         temp_df = pd.concat([temp_df, pd.DataFrame([new_row])], ignore_index=True)
 
+    #  DATA 
     calc_data = [
         ["Asset",           asset],
         ["Purity",          purity if asset == "Gold" else "-"],
@@ -1375,10 +1338,16 @@ def generate_excel_report(asset, purity, price, qty_grams, base, making_amt, gst
         ["Total Amount",    int(total)],
     ]
 
+    pred_df = pd.DataFrame({
+        "Date": future_dates,
+        "Predicted Price (₹/g)": future_prices
+    })
+
     output = BytesIO()
 
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
         pd.DataFrame(calc_data, columns=["Field", "Value"]).to_excel(writer, index=False, startrow=5, startcol=0)
+        pred_df.to_excel(writer, index=False, startrow=5, startcol=3)
 
         ws = writer.sheets['Sheet1']
 
@@ -1393,6 +1362,11 @@ def generate_excel_report(asset, purity, price, qty_grams, base, making_amt, gst
         # Column widths
         set_col_width('A', 22)
         set_col_width('B', 18)
+        set_col_width('C', 3)   # spacer
+        set_col_width('D', 18)
+        set_col_width('E', 22)
+        set_col_width('F', 3)   # spacer
+        set_col_width('G', 36)  # chart area
 
         # White background for all used cells 
         white_fill = PatternFill("solid", fgColor="FFFFFF")
@@ -1430,9 +1404,33 @@ def generate_excel_report(asset, purity, price, qty_grams, base, making_amt, gst
         ws["A3"].font = Font(name="Calibri", size=10, italic=True, color="B0C4DE")
         ws["A3"].alignment = Alignment(horizontal="center", vertical="center")
 
+        # SECTION LABELS
+        ws.row_dimensions[5].height = 20
+
+        def section_label(cell_ref, text):
+            c = ws[cell_ref]
+            c.value = text
+            c.font = Font(name="Calibri", size=9, bold=True, color="6B7280")
+            c.alignment = Alignment(horizontal="left", vertical="center")
+
+        section_label("A5", "INVESTMENT DETAILS")
+        section_label("D5", "7-DAY PRICE FORECAST")
+
+        # TABLE HEADERS
+        hdr_fill = PatternFill("solid", fgColor="1E3A5F")
+        hdr_font = Font(name="Calibri", size=10, bold=True, color="FFFFFF")
+        hdr_align = Alignment(horizontal="center", vertical="center")
+
         ws.row_dimensions[6].height = 22
 
         for col_letter, label in [("A", "Field"), ("B", "Value")]:
+            c = ws[f"{col_letter}6"]
+            c.fill = hdr_fill
+            c.font = hdr_font
+            c.alignment = hdr_align
+            c.border = thin_border()
+
+        for col_letter, label in [("D", "Date"), ("E", "Predicted Price (₹/g)")]:
             c = ws[f"{col_letter}6"]
             c.fill = hdr_fill
             c.font = hdr_font
@@ -1444,6 +1442,8 @@ def generate_excel_report(asset, purity, price, qty_grams, base, making_amt, gst
         norm_fill = PatternFill("solid", fgColor="FFFFFF")
         row_font  = Font(name="Calibri", size=10, color="1F2937")
         val_font  = Font(name="Calibri", size=10, bold=True, color="1E3A5F")
+
+        highlight_rows = {13}   # Total Amount row (row index 7 in calc_data = excel row 13)
 
         for i in range(8):
             excel_row = 7 + i
@@ -1467,6 +1467,82 @@ def generate_excel_report(asset, purity, price, qty_grams, base, making_amt, gst
 
         # Bold the total row label too
         ws["A13"].font = Font(name="Calibri", size=10, bold=True, color="1E3A5F")
+
+        # Prediction table rows
+        for i in range(7):
+            excel_row = 7 + i
+            ws.row_dimensions[excel_row].height = 20
+            fill = alt_fill if i % 2 == 0 else norm_fill
+            for col_letter in ["D", "E"]:
+                c = ws[f"{col_letter}{excel_row}"]
+                c.fill = fill
+                c.border = thin_border()
+                c.font = row_font
+                c.alignment = Alignment(
+                    horizontal="center" if col_letter == "D" else "right",
+                    vertical="center",
+                    indent=1
+                )
+
+        # CHART (3D Bar)─
+        chart = BarChart3D()
+        chart.type = "col"
+        chart.grouping = "clustered"
+        chart.title = "7-Day Price Forecast (₹/g)"
+        chart.y_axis.title = "Price (₹/g)"
+        chart.x_axis.title = "Date"
+        chart.style = 26
+        chart.width  = 16
+        chart.height = 10
+
+        # Data from prediction table (col E = 5, rows 6-13 with header)
+        data = Reference(ws, min_col=5, min_row=6, max_row=13)
+        cats = Reference(ws, min_col=4, min_row=7, max_row=13)
+
+        chart.add_data(data, titles_from_data=True)
+        chart.set_categories(cats)
+
+        # Place chart to the right of both tables
+        ws.add_chart(chart, "G5")
+
+        # DISCLAIMER─
+        ws.row_dimensions[22].height = 22
+        ws.merge_cells("A22:M22")
+        ws["A22"] = "⚠  DISCLAIMER: Market predictions are indicative only. Past performance does not guarantee future results. Please consult a financial advisor before investing."
+        ws["A22"].font = Font(name="Calibri", size=9, italic=True, color="9CA3AF")
+        ws["A22"].alignment = Alignment(horizontal="left", vertical="center", indent=1)
+        ws["A22"].fill = PatternFill("solid", fgColor="F9FAFB")
+        disc_border = Border(
+            top=Side(style='thin', color="E5E7EB"),
+            bottom=Side(style='thin', color="E5E7EB")
+        )
+        ws["A22"].border = disc_border
+
+        # FOOTER
+        footer_fill = PatternFill("solid", fgColor="1E3A5F")
+        gold_fill2  = PatternFill("solid", fgColor="C9A84C")
+
+        ws.row_dimensions[23].height = 4
+        for col in range(1, 14):
+            ws.cell(row=23, column=col).fill = gold_fill2
+
+        ws.row_dimensions[24].height = 24
+        for col in range(1, 14):
+            ws.cell(row=24, column=col).fill = footer_fill
+
+        ws.merge_cells("A24:M24")
+        ws["A24"] = "© 2026  •  Developed by Daksh Vasani  |  Advanced Analytics  •  Machine Learning  •  Financial Insights"
+        ws["A24"].font = Font(name="Calibri", size=10, italic=True, color="B0C4DE")
+        ws["A24"].alignment = Alignment(horizontal="center", vertical="center")
+
+        # LOGO (optional)
+        try:
+            logo = Image("logo.png")
+            logo.width  = 90
+            logo.height = 40
+            ws.add_image(logo, "L2")
+        except Exception:
+            pass
 
         # Freeze panes
         ws.freeze_panes = "A7"
@@ -1521,9 +1597,9 @@ def premium_calculator(asset, latest):
             st.markdown("### Gold Purity")
             p1, p2, p3 = st.columns(3)
 
-            if p1.button("24K", key=f"{prefix}_24k"): st.session_state[f"{prefix}_purity"] = "24K"
-            if p2.button("22K", key=f"{prefix}_22k"): st.session_state[f"{prefix}_purity"] = "22K"
-            if p3.button("18K", key=f"{prefix}_18k"): st.session_state[f"{prefix}_purity"] = "18K"
+            if p1.button("24K"): st.session_state[f"{prefix}_purity"] = "24K"
+            if p2.button("22K"): st.session_state[f"{prefix}_purity"] = "22K"
+            if p3.button("18K"): st.session_state[f"{prefix}_purity"] = "18K"
 
         purity = st.session_state[f"{prefix}_purity"]
 
@@ -1614,6 +1690,7 @@ def premium_calculator(asset, latest):
             st.slider("Amount", 0, 1000000, key=f"{prefix}_amt_slider")
 
             amount = float(st.session_state[f"{prefix}_val_amt"])
+            original_amount = amount
 
             making = st.slider("Making Charge (%)", 0, 50, 10)
             gst = st.checkbox("Include GST (3%)", True)
@@ -1631,6 +1708,7 @@ def premium_calculator(asset, latest):
         gst_amt = subtotal * 0.03 if gst else 0
         total = subtotal + gst_amt
 
+        #  DOWNLOAD 
         st.markdown("<br><br>", unsafe_allow_html=True)
 
         excel_data = generate_excel_report(

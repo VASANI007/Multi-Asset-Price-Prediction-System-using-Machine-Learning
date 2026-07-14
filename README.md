@@ -4,7 +4,10 @@
 </p>
 
 ---
+# Multi-Asset Price Prediction System
+🔗 **Live Project Link:** [Click Here to View App](https://multi-asset-price-prediction.streamlit.app/)
 
+---
 # 💹 Financial Market Intelligence  
 ### Multi-Asset Price Prediction System using Machine Learning
 
